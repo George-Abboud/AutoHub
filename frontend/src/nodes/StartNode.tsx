@@ -77,16 +77,16 @@ export const StartNode = memo(({ id, selected }: { id: string; selected?: boolea
 
       {/* Node Body */}
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <p style={{ margin: 0, fontSize: '11px', color: (isLocked || !canRun) ? '#525252' : '#A3A3A3', lineHeight: '1.5' }}>
+        <p style={{ margin: 0, fontSize: '11px', color: !canRun ? '#525252' : '#A3A3A3', lineHeight: '1.5' }}>
           {!canRun && !isRunning ? 'Connect to at least one node to execute.' : 'Manual trigger to start the spectrum flow execution.'}
-          {isLocked && <span style={{ display: 'block', color: accentColor, marginTop: '4px', fontSize: '10px', fontWeight: 800 }}>[ Workspace Locked ]</span>}
+          {isLocked && <span style={{ display: 'block', color: '#737373', marginTop: '4px', fontSize: '10px', fontWeight: 700 }}>[ Canvas Locked — Execution Active ]</span>}
         </p>
         
         <Button
           variant={isRunning ? 'outline' : (canRun ? 'primary' : 'outline')}
           size="lg"
           onClick={handleAction}
-          disabled={!isRunning && (!canRun || isLocked)}
+          disabled={!isRunning && !canRun}
           style={{ 
             width: '100%', 
             // Custom styles to override variants if needed
