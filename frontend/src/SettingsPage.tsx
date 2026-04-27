@@ -20,15 +20,17 @@ export const SettingsPage = () => {
     { id: 'theme', title: 'Theme', icon: Palette },
     { id: 'system', title: 'System', icon: ShieldAlert },
   ];
-// ... (keep colors and updateSetting)
   const colors = [
     { name: 'Spectrum Orange', hex: '#f2572b' },
-    { name: 'Vibrant Blue', hex: '#3b82f6' },
-    { name: 'Vibrant Green', hex: '#22c55e' },
+    { name: 'Vibrant Blue',   hex: '#3b82f6' },
+    { name: 'Vibrant Green',  hex: '#22c55e' },
     { name: 'Vibrant Purple', hex: '#a855f7' },
-    { name: 'Vibrant Pink', hex: '#ec4899' },
-    { name: 'Vibrant Red', hex: '#ef4444' },
+    { name: 'Vibrant Pink',   hex: '#ec4899' },
+    { name: 'Vibrant Red',    hex: '#ef4444' },
   ];
+
+  const isActive = (hex: string) =>
+    accentColor.toLowerCase() === hex.toLowerCase();
 
   return (
     <div style={{ 
@@ -196,7 +198,7 @@ export const SettingsPage = () => {
                             onClick={() => updateSetting('accentColor', c.hex)}
                             style={{
                               padding: '24px 16px', borderRadius: '16px', border: '1px solid',
-                              borderColor: accentColor === c.hex ? accentColor : '#262626',
+                              borderColor: isActive(c.hex) ? c.hex : '#262626',
                               background: '#1c1c1c', cursor: 'pointer', position: 'relative',
                               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
                               transition: 'all 0.2s'
@@ -204,12 +206,12 @@ export const SettingsPage = () => {
                           >
                             <div style={{ 
                               width: '36px', height: '36px', background: c.hex, borderRadius: '50%', 
-                              boxShadow: accentColor === c.hex ? `0 0 20px ${c.hex}66` : 'none',
+                            boxShadow: isActive(c.hex) ? `0 0 20px ${c.hex}66` : 'none',
                               display: 'flex', alignItems: 'center', justifyContent: 'center'
                             }}>
-                              {accentColor === c.hex && <Check size={18} color="white" strokeWidth={3} />}
+                              {isActive(c.hex) && <Check size={18} color="white" strokeWidth={3} />}
                             </div>
-                            <span style={{ fontSize: '11px', color: accentColor === c.hex ? '#EBEBEB' : '#737373', fontWeight: 700 }}>{c.name}</span>
+                            <span style={{ fontSize: '11px', color: isActive(c.hex) ? '#EBEBEB' : '#737373', fontWeight: 700 }}>{c.name}</span>
                           </button>
                         ))}
                       </div>

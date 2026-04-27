@@ -156,6 +156,6 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 <div align="center">
 
-Built with ❤️ by **George Abboud**
+Built with ❤️ by **George.devign**
 
 </div>
