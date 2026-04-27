@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/George-Abboud/Automation-Workspace-Vibe-coding-/main/frontend/public/favicon.svg" width="80" alt="AutoHub Logo" />
+<img src="https://raw.githubusercontent.com/George-Abboud/AutoHub/main/frontend/public/favicon.svg" width="80" alt="AutoHub Logo" />
 
 # AutoHub
 
@@ -8,7 +8,7 @@
 
 Design, compose, and execute multi-node automation pipelines through an intuitive drag-and-drop canvas — and watch your data flow in real time.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-F2572B?style=for-the-badge&logo=github)](https://george-abboud.github.io/Automation-Workspace-Vibe-coding-/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-F2572B?style=for-the-badge&logo=github)](https://george-abboud.github.io/AutoHub/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite)](https://vite.dev)
@@ -19,7 +19,7 @@ Design, compose, and execute multi-node automation pipelines through an intuitiv
 
 ## 🌐 Live Demo
 
-**[https://george-abboud.github.io/Automation-Workspace-Vibe-coding-/](https://george-abboud.github.io/Automation-Workspace-Vibe-coding-/)**
+**[https://george-abboud.github.io/AutoHub/](https://george-abboud.github.io/AutoHub/)**
 
 ---
 
@@ -139,10 +139,10 @@ src/
 
 ```bash
 # Clone the repo
-git clone https://github.com/George-Abboud/Automation-Workspace-Vibe-coding-.git
+git clone https://github.com/George-Abboud/AutoHub.git
 
 # Install dependencies
-cd Automation-Workspace-Vibe-coding-/frontend
+cd AutoHub/frontend
 npm install
 
 # Start dev server
