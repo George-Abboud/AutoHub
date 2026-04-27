@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from './components/layout/Sidebar';
 import { useSettingsViewModel } from './viewmodels/useSettingsViewModel';
+import { type AppState } from './store';
 import { 
   Monitor, Palette, 
   Grid3X3, Check,
@@ -118,7 +119,7 @@ export const SettingsPage = () => {
                       desc="Choose the pattern for the background grid system."
                       control={
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {['dots', 'lines', 'none'].map(t => (
+                          {(['dots', 'lines', 'none'] as const).map(t => (
                             <button
                               key={t}
                               onClick={() => updateSetting('gridStyle', t)}
@@ -145,7 +146,7 @@ export const SettingsPage = () => {
                       desc="Choose the visual path logic for node connections."
                       control={
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {['step', 'bezier', 'straight'].map(t => (
+                          {(['step', 'bezier', 'straight'] as const).map(t => (
                             <button
                               key={t}
                               onClick={() => updateSetting('edgeType', t)}
@@ -167,7 +168,7 @@ export const SettingsPage = () => {
                       desc="Switch between solid and dashed connection lines."
                       control={
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {['solid', 'dashed'].map(t => (
+                          {(['solid', 'dashed'] as const).map(t => (
                             <button
                               key={t}
                               onClick={() => updateSetting('edgePattern', t)}
@@ -195,7 +196,7 @@ export const SettingsPage = () => {
                         {colors.map((c) => (
                           <button
                             key={c.hex}
-                            onClick={() => updateSetting('accentColor', c.hex)}
+                            onClick={() => updateSetting('accentColor', c.hex as AppState['accentColor'])}
                             style={{
                               padding: '24px 16px', borderRadius: '16px', border: '1px solid',
                               borderColor: isActive(c.hex) ? c.hex : '#262626',
