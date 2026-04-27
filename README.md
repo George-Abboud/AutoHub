@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://george-abboud.github.io/Automation-Workspace-Vibe-coding-/favicon.svg" width="80" alt="AutoHub Logo" />
+<img src="https://raw.githubusercontent.com/George-Abboud/Automation-Workspace-Vibe-coding-/main/frontend/public/favicon.svg" width="80" alt="AutoHub Logo" />
 
 # AutoHub
 
@@ -65,7 +65,6 @@ AutoHub is a high-fidelity visual automation workflow builder. It allows users t
 ### 🔒 Editor Controls
 - **Lock Mode** — freeze the canvas to prevent accidental edits
 - **Zen Mode** — hide all UI chrome for distraction-free viewing
-- **Keyboard Shortcuts**: `Ctrl+Enter` run/stop, `L` lock, `Z` zen, `Escape` go home
 
 ### 🎨 Theming
 - 6 selectable accent colors with live preview
