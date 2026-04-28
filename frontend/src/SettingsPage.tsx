@@ -64,7 +64,7 @@ export const SettingsPage = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '60px' }}>
           {/* Tabs */}
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -74,17 +74,18 @@ export const SettingsPage = () => {
                   onClick={() => setActiveTab(tab.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '14px 20px', borderRadius: '14px',
-                    background: isActive ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+                    padding: '14px 18px', borderRadius: '12px',
+                    background: isActive ? `${accentColor}14` : 'transparent',
                     border: '1px solid',
-                    borderColor: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                    color: isActive ? accentColor : '#737373',
+                    borderColor: isActive ? `${accentColor}26` : 'transparent',
+                    color: isActive ? accentColor : '#8A8A8A',
                     cursor: 'pointer', textAlign: 'left',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     fontWeight: isActive ? 700 : 500,
+                    fontSize: '14px',
                   }}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                   {tab.title}
                 </button>
               );
