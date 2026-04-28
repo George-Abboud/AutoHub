@@ -62,6 +62,7 @@ export type AppState = {
   // Workspace Actions
   createWorkspace: (name: string) => void;
   deleteWorkspace: (id: string) => void;
+  renameWorkspace: (id: string, name: string) => void;
   selectWorkspace: (id: string) => void;
   goHome: () => void;
   resetStore: () => void;
@@ -262,6 +263,14 @@ export const useStore = create<AppState>()(
           workspaces: state.workspaces.filter(ws => ws.id !== id),
           activeWorkspaceId: state.activeWorkspaceId === id ? null : state.activeWorkspaceId,
           currentView: state.activeWorkspaceId === id ? 'home' : state.currentView
+        }));
+      },
+
+      renameWorkspace: (id: string, name: string) => {
+        set(state => ({
+          workspaces: state.workspaces.map(ws =>
+            ws.id === id ? { ...ws, name } : ws
+          )
         }));
       },
 

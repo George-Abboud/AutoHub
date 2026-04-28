@@ -9,6 +9,7 @@ export const useWorkspaceViewModel = () => {
   const createWorkspace = useStore(s => s.createWorkspace);
   const deleteWorkspace = useStore(s => s.deleteWorkspace);
   const selectWorkspace = useStore(s => s.selectWorkspace);
+  const renameWorkspace = useStore(s => s.renameWorkspace);
   const goHome = useStore(s => s.goHome);
 
   const activeWorkspace = workspaces.find(ws => ws.id === activeWorkspaceId) || null;
@@ -19,6 +20,7 @@ export const useWorkspaceViewModel = () => {
     activeWorkspace,
     createWorkspace,
     deleteWorkspace,
+    renameWorkspace,
     selectWorkspace,
     goHome
   };
