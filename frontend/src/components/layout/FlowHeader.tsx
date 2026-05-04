@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useReactFlow } from '@xyflow/react';
-import { ArrowLeft, Plus, Minus, Maximize, Trash2, Lock, Unlock } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Maximize, Trash2, Lock, Unlock, Cloud } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { useStore } from '../../store';
 import { useFlowViewModel } from '../../viewmodels/useFlowViewModel';
 import { useWorkspaceViewModel } from '../../viewmodels/useWorkspaceViewModel';
 import { HeaderButton } from '../ui/HeaderButton';
@@ -17,6 +19,8 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({ workspaceName, onRequest
   const { isLocked, toggleLock, toggleZenMode } = useFlowViewModel();
   const { goHome } = useWorkspaceViewModel();
   const { zoomIn, zoomOut } = useReactFlow();
+  const isSyncing = useStore(s => s.isSyncing);
+  const accentColor = useStore(s => s.accentColor);
 
   return (
     <header style={{
@@ -34,8 +38,23 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({ workspaceName, onRequest
         </motion.button>
         <div style={{ width: '1px', height: '24px', background: '#262626' }} />
         <Logo size={24} />
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '14px', fontWeight: 800, color: '#EBEBEB' }}>{workspaceName}</span>
+          <AnimatePresence>
+            {isSyncing && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                style={{ display: 'flex', alignItems: 'center' }}
+                title="Syncing to cloud..."
+              >
+                <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity }}>
+                  <Cloud size={14} color={accentColor} />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

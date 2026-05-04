@@ -20,24 +20,38 @@ export const Logo: React.FC<LogoProps> = ({ size = 32, showText = false, color }
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        <defs>
+          <linearGradient id="logoGradient" x1="0" y1="0" x2="40" y2="40">
+            <stop offset="0%" stopColor={themeColor} />
+            <stop offset="100%" stopColor="#FF8272" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        
+        {/* Connection Lines */}
         <path
-          d="M20 4L34 11V29L20 36L6 29V11L20 4Z"
-          fill={`${themeColor}1a`}
-          stroke={themeColor}
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M20 12V28M13 20H27"
-          stroke={themeColor}
+          d="M10 20L20 10M10 20L20 30M20 10L30 20M20 30L30 20"
+          stroke="url(#logoGradient)"
           strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          filter="url(#glow)"
         />
-        <circle cx="20" cy="12" r="2.5" fill="#EBEBEB" />
-        <circle cx="20" cy="28" r="2.5" fill="#EBEBEB" />
-        <circle cx="13" cy="20" r="2.5" fill="#EBEBEB" />
-        <circle cx="27" cy="20" r="2.5" fill="#EBEBEB" />
+        
+        {/* Nodes */}
+        <circle cx="10" cy="20" r="4" fill="#171717" stroke="url(#logoGradient)" strokeWidth="2.5" />
+        <circle cx="20" cy="10" r="4" fill="#171717" stroke="url(#logoGradient)" strokeWidth="2.5" />
+        <circle cx="20" cy="30" r="4" fill="#171717" stroke="url(#logoGradient)" strokeWidth="2.5" />
+        <circle cx="30" cy="20" r="5" fill="url(#logoGradient)" filter="url(#glow)" />
+        
+        {/* Internal Pulse */}
+        <circle cx="30" cy="20" r="2" fill="white" />
       </svg>
       {showText && (
         <span style={{ 

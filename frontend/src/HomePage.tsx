@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, Layout, ChevronRight, Zap, Pencil } from 'lucide-react';
+import { Plus, Trash2, Calendar, Layout, ChevronRight, Zap, Pencil, Cloud, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './components/ui/Button';
 import { AnimatedBackground } from './components/layout/AnimatedBackground';
@@ -13,7 +13,7 @@ import { useStore } from './store';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 
 export const HomePage = () => {
-  const { workspaces, createWorkspace, deleteWorkspace, selectWorkspace, renameWorkspace } = useWorkspaceViewModel();
+  const { workspaces, createWorkspace, deleteWorkspace, selectWorkspace, renameWorkspace, loadInitialData } = useWorkspaceViewModel();
   const { accentColor } = useAppViewModel();
   const { user } = useAuthViewModel();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,6 +65,9 @@ export const HomePage = () => {
   };
 
   const isAIChatbotOpen = useStore(s => s.isAIChatbotOpen);
+  const isSyncing = useStore(s => s.isSyncing);
+  const isGlobalLoading = useStore(s => s.isGlobalLoading);
+  const isFetching = useStore(s => s.isFetching);
 
   if (!user) {
     return (
@@ -104,8 +107,23 @@ export const HomePage = () => {
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
               <Logo size={40} showText />
+              <AnimatePresence>
+                {isSyncing && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}
+                  >
+                    <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1, repeat: Infinity }}>
+                      <Cloud size={14} color={accentColor} />
+                    </motion.div>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#737373', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Syncing</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <p style={{ color: '#737373', margin: 0, fontSize: '16px', fontWeight: 500, maxWidth: '500px', lineHeight: '1.6' }}>
               Architect, deploy, and scale your intelligent automation workflows with surgical precision.
@@ -124,7 +142,7 @@ export const HomePage = () => {
         </motion.div>
 
         {/* Workspaces Grid */}
-        {workspaces.length === 0 ? (
+        {workspaces.length === 0 && !isFetching ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -140,6 +158,25 @@ export const HomePage = () => {
               No active workspaces found
             </p>
           </motion.div>
+        ) : workspaces.length === 0 && isFetching ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} style={{ height: '240px', background: '#1c1c1c', borderRadius: '24px', border: '1px solid #262626', padding: '28px', position: 'relative', overflow: 'hidden' }}>
+                <motion.div 
+                  animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}
+                  style={{ width: '48px', height: '48px', background: '#262626', borderRadius: '14px', marginBottom: '24px' }} 
+                />
+                <motion.div 
+                  animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                  style={{ width: '60%', height: '20px', background: '#262626', borderRadius: '4px', marginBottom: '12px' }} 
+                />
+                <motion.div 
+                  animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                  style={{ width: '40%', height: '14px', background: '#262626', borderRadius: '4px' }} 
+                />
+              </div>
+            ))}
+          </div>
         ) : (
           <div style={{ 
             display: 'grid', 

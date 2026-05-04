@@ -51,6 +51,8 @@ export type AppState = {
   activeEdges: string[];
   executionTime: number;
   isGlobalLoading: boolean;
+  isSyncing: boolean;
+  isFetching: boolean;
 
   // Actions
   onNodesChange: OnNodesChange;
@@ -89,6 +91,7 @@ export type AppState = {
   // Chat Actions
   loadChatMessages: () => Promise<any[]>;
   saveChatMessage: (msg: ChatMessage) => Promise<void>;
+  clearChatMessages: () => Promise<void>;
 };
 
 const initialNodes: Node[] = [
@@ -126,6 +129,8 @@ export const useStore = create<AppState>()((set, get) => ({
       activeEdges: [],
       executionTime: 0,
       isGlobalLoading: false,
+      isSyncing: false,
+      isFetching: false,
 
       onNodesChange: (changes: NodeChange[]) => {
         const { activeWorkspaceId, workspaces } = get();
@@ -295,7 +300,8 @@ export const useStore = create<AppState>()((set, get) => ({
       loadInitialData: async () => {
         const user = get().user;
         if (!user) return;
-
+        
+        set({ isFetching: true });
         try {
           // 1. Fetch Profile
           const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
@@ -306,7 +312,6 @@ export const useStore = create<AppState>()((set, get) => ({
           if (settings) {
             get().setSettings(settings);
           } else {
-            // Create default settings if not exists
             const defaultSettings = {
               user_id: user.id,
               theme_mode: 'dark',
@@ -332,9 +337,14 @@ export const useStore = create<AppState>()((set, get) => ({
               createdAt: new Date(w.created_at).toLocaleDateString()
             }));
             set({ workspaces: mappedWorkspaces });
+            if (mappedWorkspaces.length > 0 && !get().activeWorkspaceId) {
+              set({ activeWorkspaceId: mappedWorkspaces[0].id });
+            }
           }
         } catch (err) {
           console.error('Error loading initial data:', err);
+        } finally {
+          set({ isFetching: false });
         }
       },
 
@@ -343,6 +353,7 @@ export const useStore = create<AppState>()((set, get) => ({
         const ws = get().workspaces.find(w => w.id === wsId);
         if (!ws) return;
 
+        set({ isSyncing: true });
         try {
           await supabase.from('workflows').upsert({
             id: ws.id,
@@ -355,6 +366,8 @@ export const useStore = create<AppState>()((set, get) => ({
           });
         } catch (err) {
           console.error('Sync failed for workspace:', wsId, err);
+        } finally {
+          set({ isSyncing: false });
         }
       },
 
@@ -394,10 +407,35 @@ export const useStore = create<AppState>()((set, get) => ({
         }
       },
 
+      clearChatMessages: async () => {
+        const user = get().user;
+        if (!user) {
+          console.warn('Clear Chat: No user found in store.');
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from('chat_messages')
+            .delete()
+            .eq('user_id', user.id);
+
+          if (error) {
+            console.error('Supabase Delete Error:', error.message, error.details);
+            throw error;
+          }
+          
+          console.log('Chat messages cleared successfully from Supabase.');
+        } catch (err) {
+          console.error('Failed to clear chat in Supabase:', err);
+        }
+      },
+
       syncSettings: async () => {
         const user = get().user;
         if (!user) return;
 
+        set({ isSyncing: true });
         try {
           await supabase.from('user_settings').upsert({
             user_id: user.id,
@@ -409,6 +447,8 @@ export const useStore = create<AppState>()((set, get) => ({
           });
         } catch (err) {
           console.error('Sync failed for settings:', err);
+        } finally {
+          set({ isSyncing: false });
         }
       },
 
@@ -509,6 +549,7 @@ export const useStore = create<AppState>()((set, get) => ({
       },
 
       selectWorkspace: (id: string) => {
+        console.log(`[Store] Selecting workspace: ${id}`);
         const ws = get().workspaces.find(w => w.id === id);
         const lastRun = ws?.history[0];
         set({ 
@@ -518,10 +559,16 @@ export const useStore = create<AppState>()((set, get) => ({
           isLocked: false,
           isZenMode: false,
         });
-        setTimeout(() => get().updateEdgeStyles(), 50);
+        setTimeout(() => {
+          get().updateEdgeStyles();
+          console.log(`[Store] View switched to editor for workspace: ${id}`);
+        }, 50);
       },
 
-      goHome: () => set({ currentView: 'home', activeWorkspaceId: null, isRunning: false, isZenMode: false }),
+      goHome: () => {
+        console.log('[Store] Going home');
+        set({ currentView: 'home', activeWorkspaceId: null, isRunning: false, isZenMode: false });
+      },
 
       updateEdgeStyles: () => {
         const { activeWorkspaceId, workspaces, activeEdges, isRunning } = get();

@@ -13,15 +13,18 @@ import {
   ChevronRight,
   ChevronLeft as ChevronLeftIcon,
   Zap,
-  PlayCircle
+  PlayCircle,
+  Plus,
+  Play,
+  Trash2,
+  MessageSquare
 } from 'lucide-react';
 import { useStore } from '../../store';
 import type { ChatMessage } from '../../types';
+import { ConfirmModal } from './ConfirmModal';
 
 const PRESET_RESPONSES: Record<string, string> = {
   "default": "Welcome to AutoHub AI! I'm here to help you automate your workflows. Provide a Gemini or Groq API Key in settings for advanced assistance.",
-  "help": "AutoHub is a visual automation platform. You can create workflows by connecting nodes. Try adding a 'Start Node' and then a 'Log Node' to see how it works!",
-  "guide": "To get started:\n1. Create a workspace.\n2. Add nodes from the sidebar.\n3. Connect them using your mouse.\n4. Press 'Run' to see the execution trace.",
   "nodes": "We currently support:\n- Start Node: The beginning of every workflow.\n- Color Node: Changes the data color flowing through edges.\n- Log Node: Outputs text to the execution console.",
 };
 
@@ -37,6 +40,7 @@ export const AIChatbot = () => {
   const activeWorkspaceId = useStore(s => s.activeWorkspaceId);
   const loadChatMessages = useStore(s => s.loadChatMessages);
   const saveChatMessage = useStore(s => s.saveChatMessage);
+  const clearChatMessages = useStore(s => s.clearChatMessages);
   const user = useStore(s => s.user);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -47,23 +51,25 @@ export const AIChatbot = () => {
   const [groqKeyInput, setGroqKeyInput] = useState('');
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load chat history on mount or when user changes
   useEffect(() => {
     const fetchHistory = async () => {
       if (!user) return;
-      const history = await loadChatMessages();
-      if (history && history.length > 0) {
-        setMessages(history);
-      } else {
-        // Fallback to welcome message if no history
-        setMessages([{
-          id: '1',
-          role: 'assistant',
-          content: PRESET_RESPONSES.default,
-          timestamp: new Date().toLocaleTimeString()
-        }]);
+      setIsHistoryLoading(true);
+      try {
+        const history = await loadChatMessages();
+        if (history && history.length > 0) {
+          setMessages(history);
+        } else {
+          // Keep it empty to show the premium Empty State UI
+          setMessages([]);
+        }
+      } finally {
+        setIsHistoryLoading(false);
       }
     };
     fetchHistory();
@@ -125,28 +131,86 @@ export const AIChatbot = () => {
     setMessages(prev => [...prev, userMessage]);
     await saveChatMessage(userMessage);
 
-    // Special logic for Run Action
+    // Special logic for Run Action (Tag Mode)
     if (selectedAction === 'run') {
       const activeWs = workspaces.find(w => w.id === activeWorkspaceId);
-      if (activeWs && !input.trim()) {
-        handleActionRunWorkspace(activeWs.name);
-        setSelectedAction(null);
-        return;
-      } else if (!input.trim()) {
+      const name = input.trim() || (activeWs ? activeWs.name : "");
+      
+      if (!name) {
         addDebugMessage("Error: Please provide a workspace name to run, or enter a workspace first.");
         setSelectedAction(null);
         return;
+      }
+
+      setIsTyping(true);
+      setSelectedAction(null);
+      setInput('');
+
+      setTimeout(async () => {
+        const response: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `Understood. I am initiating the workflow engine for "**${name}**" now. 🚀`,
+          timestamp: new Date().toLocaleTimeString()
+        };
+        
+        setMessages(prev => [...prev, response]);
+        await saveChatMessage(response);
+        setIsTyping(false);
+        
+        handleActionRunWorkspace(name);
+      }, 1000);
+
+      return;
+    }
+
+    const lowInput = input.toLowerCase().trim();
+    
+
+    // 2. Local Command: RUN
+    if (lowInput === 'run' || lowInput.includes('run workflow') || lowInput === 'execute') {
+      const activeWs = workspaces.find(w => w.id === activeWorkspaceId);
+      
+      let targetName = "";
+      if (lowInput.includes('run workflow ')) {
+        targetName = input.toLowerCase().split('run workflow ')[1].trim();
+      } else if (lowInput.startsWith('run ')) {
+        targetName = input.toLowerCase().split('run ')[1].trim();
+      }
+
+      const finalName = targetName || (activeWs ? activeWs.name : "");
+
+      if (finalName) {
+        setIsTyping(true);
+        setInput('');
+
+        // ChatGPT-like delay and response
+        setTimeout(async () => {
+          const response: ChatMessage = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: `Understood. I am initiating the workflow engine for "**${finalName}**" now. 🚀`,
+            timestamp: new Date().toLocaleTimeString()
+          };
+          
+          setMessages(prev => [...prev, response]);
+          await saveChatMessage(response);
+          setIsTyping(false);
+          
+          // Trigger actual execution
+          handleActionRunWorkspace(finalName);
+        }, 1000);
+        
+        return;
       } else {
-        handleActionRunWorkspace(input.trim());
-        setSelectedAction(null);
+        addDebugMessage("I don't know which workspace to run. Please specify the name: 'run [name]' or enter a workspace first.");
         setInput('');
         return;
       }
     }
 
-    setInput('');
     setIsTyping(true);
-
+    setInput('');
     const workspacesContext = getWorkspacesContext();
     const fullPrompt = `CONTEXT:\n${workspacesContext}\n\nUSER QUESTION: ${input}\n\nIMPORTANT: If the user wants to run a workspace, you MUST include the exact string "ACTION_RUN_WORKSPACE: [Workspace Name]" in your response. DO NOT simulate the run in text. The system will handle the actual execution.`;
     
@@ -199,9 +263,15 @@ export const AIChatbot = () => {
           if (!success) responseContent = "Gemini failed. Try Groq or check your key.";
         } else {
           const low = input.toLowerCase();
-          if (low.includes('help')) responseContent = PRESET_RESPONSES.help;
-          else if (low.includes('guide')) responseContent = PRESET_RESPONSES.guide;
-          else responseContent = "I'm in Guide Mode. Add a Groq or Gemini key in settings for AI.";
+          if (low.includes('run')) {
+            const activeWs = workspaces.find(w => w.id === activeWorkspaceId);
+            if (activeWs) {
+              responseContent = `I'll start the execution for "${activeWs.name}" right away!\nACTION_RUN_WORKSPACE: ${activeWs.name}`;
+            } else {
+              responseContent = "I can't run a workflow from here. Please enter a workspace first, or specify the name: 'run [name]'.";
+            }
+          }
+          else responseContent = "I'm in Active Mode. Add a Groq or Gemini key in settings for full AI capabilities.";
         }
       } catch (err) {
         responseContent = "Error: Something went wrong. Please try again.";
@@ -228,42 +298,70 @@ export const AIChatbot = () => {
   };
 
   const handleActionRunWorkspace = async (name: string) => {
-    const ws = workspaces.find(w => w.name.toLowerCase() === name.toLowerCase());
+    const store = useStore.getState();
+    const currentWorkspaces = store.workspaces;
     
+    // CASE 2.3: No workspaces exist at all
+    if (!currentWorkspaces || currentWorkspaces.length === 0) {
+      addDebugMessage("It seems you don't have any workspaces yet. Please create one first before we can run any automations.");
+      return;
+    }
+
+    // Identify target workspace
+    let ws = currentWorkspaces.find(w => w.name.toLowerCase() === name.toLowerCase());
+    
+    // CASE 2.2: Workspace name not found
     if (!ws) {
-      addDebugMessage(`Error: Workspace "${name}" not found.`);
+      addDebugMessage(`I couldn't find a workspace named "**${name}**". Please double-check the name and try again.`);
       return;
     }
 
-    const isActive = ws.id === activeWorkspaceId;
+    const isActive = ws.id === store.activeWorkspaceId && store.currentView === 'editor';
 
+    // CASE 2.4: Valid name, but in a different screen -> Navigate and Wait
     if (!isActive) {
-      addDebugMessage(`System: Preparing to switch to workspace "${ws.name}"...`);
-      useStore.getState().selectWorkspace(ws.id);
-      addDebugMessage(`System: Navigated. Waiting 2 seconds for visual stability...`);
+      addDebugMessage(`Understood. Switching you to the "**${ws.name}**" workspace now...`);
+      store.selectWorkspace(ws.id);
+      
+      // Wait for 2 seconds as requested
       await new Promise(resolve => setTimeout(resolve, 2000));
-    } else {
-      addDebugMessage(`System: Already in workspace "${ws.name}". Validating directly...`);
+      
+      // Re-fetch fresh data after navigation to see current nodes/edges in the updated store
+      ws = useStore.getState().workspaces.find(w => w.id === ws.id)!;
     }
 
-    // 1. Check StartNode existence
-    const startNode = ws.nodes?.find(n => n.type === 'startNode');
+    // --- CASE 1: Validation Phase (Now that we are inside the workspace) ---
+    
+    const nodes = ws.nodes || [];
+    const edges = ws.edges || [];
+    
+    const startNode = nodes.find(n => n.type === 'startNode');
+    
+    // Check if Start Node exists (it should always exist by design, but safe-check)
     if (!startNode) {
-      addDebugMessage(`Error: No "Start Node" found in "${ws.name}". Every workflow must have a Start Node to begin execution.`);
+      addDebugMessage(`I've accessed "**${ws.name}**", but I can't find a **Start Node**. Every workflow needs one to begin.`);
       return;
     }
 
-    // 2. Check StartNode connection (Business Logic Check)
-    const isConnected = ws.edges?.some(e => e.source === startNode.id);
+    // Check if Start Node is connected
+    const isConnected = edges.some(e => e.source === startNode.id);
+    
     if (!isConnected) {
-      addDebugMessage(`Error: The "Start Node" is placed but not connected to anything. I cannot run an empty workflow. Please connect it to another node first.`);
+      // CASE 1.2: Start node is NOT connected
+      addDebugMessage(`I'm ready to run "**${ws.name}**", but the **Start Node** isn't connected to anything. Please draw a connection from it first.`);
       return;
     }
 
-    // 3. Trigger actual execution
-    addDebugMessage(`System: Validation successful. Launching execution engine...`);
+    // CASE 1.1: Everything is perfect -> RUN
+    addDebugMessage(`All checks passed! Initiating the execution cycle for "**${ws.name}**"... 🚀`);
+    
+    // Ensure we are in editor view (just in case)
+    if (useStore.getState().currentView !== 'editor') {
+       useStore.getState().selectWorkspace(ws.id);
+    }
+    
+    // Run the actual workflow
     useStore.getState().runWorkflow();
-    addDebugMessage(`System: Workspace "${ws.name}" is now executing successfully.`);
   };
 
   const addDebugMessage = (content: string) => {
@@ -274,16 +372,12 @@ export const AIChatbot = () => {
       timestamp: new Date().toLocaleTimeString()
     };
     setMessages(prev => [...prev, debugMsg]);
-    saveChatMessage(debugMsg); // Persist debug too
   };
 
-  const handleQuickRun = () => {
-    const activeWs = workspaces.find(w => w.id === activeWorkspaceId);
-    if (activeWs) {
-      handleActionRunWorkspace(activeWs.name);
-    } else {
-      setInput("ACTION_RUN_WORKSPACE: ");
-    }
+  const handleClearChat = async () => {
+    setMessages([]);
+    setShowClearConfirm(false);
+    await clearChatMessages();
   };
 
   return (
@@ -330,27 +424,63 @@ export const AIChatbot = () => {
         }}
       >
         {/* Header */}
-        <div style={{ padding: '24px', borderBottom: '1px solid #262626', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minWidth: `${SIDEBAR_WIDTH}px` }}>
+        <div style={{ 
+          padding: '14px 24px', 
+          height: '64px',
+          borderBottom: '1px solid #262626', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          minWidth: `${SIDEBAR_WIDTH}px`,
+          boxSizing: 'border-box'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${accentColor}10`, border: `1px solid ${accentColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Bot size={20} style={{ color: accentColor }} />
+            <div style={{ 
+              width: '36px', height: '36px', borderRadius: '8px', 
+              background: `${accentColor}10`, border: `1px solid ${accentColor}30`, 
+              display: 'flex', alignItems: 'center', justifyContent: 'center' 
+            }}>
+              <Bot size={18} style={{ color: accentColor }} />
             </div>
             <div>
-              <h3 style={{ color: '#EBEBEB', margin: 0, fontSize: '15px', fontWeight: 700 }}>AutoHub Assistant</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: settings?.api_keys?.groq ? '#10b981' : '#F2572B', boxShadow: `0 0 8px ${settings?.api_keys?.groq ? '#10b981' : '#F2572B'}` }} />
-                <span style={{ fontSize: '11px', color: '#737373', fontWeight: 600, textTransform: 'uppercase' }}>
-                  {settings?.api_keys?.groq ? 'Groq Engine Active' : 'Gemini Engine Active'}
+              <h3 style={{ color: '#EBEBEB', margin: 0, fontSize: '14px', fontWeight: 800, letterSpacing: '-0.01em' }}>AI Assistant</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '1px' }}>
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: settings?.api_keys?.groq ? '#10b981' : '#F2572B', boxShadow: `0 0 8px ${settings?.api_keys?.groq ? '#10b981' : '#F2572B'}` }} />
+                <span style={{ fontSize: '10px', color: '#737373', fontWeight: 700, textTransform: 'uppercase' }}>
+                  {settings?.api_keys?.groq ? 'Groq Active' : 'Gemini Active'}
                 </span>
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button onClick={() => setShowSettings(!showSettings)} style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', borderRadius: '10px', color: '#737373' }}>
-              <Settings size={18} />
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {messages.length > 0 && (
+              <button 
+                onClick={() => setShowClearConfirm(true)} 
+                title="Clear conversation"
+                style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', borderRadius: '10px', color: '#737373', transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.color = accentColor; e.currentTarget.style.background = `${accentColor}15`; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#737373'; e.currentTarget.style.background = 'transparent'; }}
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+            <button 
+              onClick={() => setShowSettings(!showSettings)} 
+              title="AI Settings"
+              style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', borderRadius: '10px', color: '#737373', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.color = accentColor; e.currentTarget.style.background = `${accentColor}15`; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#737373'; e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Settings size={16} />
             </button>
-            <button onClick={() => toggleAIChatbot(false)} style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', borderRadius: '10px', color: '#737373' }}>
-              <X size={18} />
+            <button 
+              onClick={() => toggleAIChatbot(false)} 
+              title="Close Assistant"
+              style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', borderRadius: '10px', color: '#737373', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.color = accentColor; e.currentTarget.style.background = `${accentColor}15`; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#737373'; e.currentTarget.style.background = 'transparent'; }}
+            >
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -408,33 +538,78 @@ export const AIChatbot = () => {
                 style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}
               >
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {messages.map((msg) => (
-                    <div key={msg.id} style={{ display: 'flex', gap: '12px', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: msg.role === 'user' ? 'rgba(255, 255, 255, 0.05)' : `${accentColor}15`, border: msg.role === 'user' ? '1px solid rgba(255,255,255,0.05)' : `1px solid ${accentColor}30` }}>
-                        {msg.role === 'user' ? <UserIcon size={14} color="#737373" /> : <Bot size={14} style={{ color: accentColor }} />}
-                      </div>
-                      <div style={{ maxWidth: '85%', display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: '6px' }}>
-                        <div style={{ 
-                          padding: '12px 18px', 
-                          borderRadius: '18px', 
-                          background: msg.role === 'user' ? accentColor : 'rgba(255, 255, 255, 0.02)', 
-                          color: msg.role === 'user' ? 'white' : '#EBEBEB', 
-                          fontSize: '13.5px', 
-                          border: msg.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.03)', 
-                          borderTopLeftRadius: msg.role === 'assistant' ? 0 : '18px', 
-                          borderTopRightRadius: msg.role === 'user' ? 0 : '18px', 
-                          lineHeight: '1.6',
-                          fontWeight: 400,
-                          boxShadow: msg.role === 'user' ? `0 4px 15px ${accentColor}30` : 'none',
-                          wordBreak: 'break-word',
-                          overflowWrap: 'anywhere'
-                        }}>
-                          {msg.content.split('\n').map((line, i) => <div key={i}>{line}</div>)}
-                        </div>
-                        <span style={{ fontSize: '10px', color: '#404040', fontWeight: 600, textTransform: 'uppercase', padding: '0 4px' }}>{msg.timestamp}</span>
-                      </div>
+                  {isHistoryLoading ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', opacity: 0.5 }}>
+                      <Loader2 size={24} className="animate-spin" color={accentColor} />
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#737373', textTransform: 'uppercase' }}>Loading History...</span>
                     </div>
-                  ))}
+                  ) : messages.length === 0 ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
+                      <div style={{ position: 'relative', marginBottom: '32px' }}>
+                        <motion.div 
+                          animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.2, 0.1] }}
+                          transition={{ duration: 4, repeat: Infinity }}
+                          style={{ position: 'absolute', inset: '-20px', background: accentColor, borderRadius: '50%', filter: 'blur(30px)' }} 
+                        />
+                        <div style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: `1px solid ${accentColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 2, boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+                          <Bot size={40} style={{ color: accentColor }} />
+                        </div>
+                      </div>
+                      <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#EBEBEB', margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>How can I help you today?</h2>
+                      <p style={{ fontSize: '14px', color: '#737373', maxWidth: '240px', lineHeight: 1.6, margin: '0 0 40px 0', fontWeight: 500 }}>
+                        Ask me to build workflows, manage workspaces, or explain automation logic.
+                      </p>
+                      
+                    </div>
+                  ) : (
+                    messages.map((msg, index) => {
+                      const isSameAsPrev = index > 0 && messages[index - 1].role === msg.role;
+                      const isSameAsNext = index < messages.length - 1 && messages[index + 1].role === msg.role;
+                      
+                      return (
+                        <div key={msg.id} style={{ 
+                          display: 'flex', 
+                          gap: '12px', 
+                          flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                          marginTop: isSameAsPrev ? '-12px' : '0' 
+                        }}>
+                          <div style={{ 
+                            width: '32px', height: '32px', borderRadius: '10px', 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                            background: msg.role === 'user' ? 'rgba(255, 255, 255, 0.05)' : `${accentColor}15`, 
+                            border: msg.role === 'user' ? '1px solid rgba(255,255,255,0.05)' : `1px solid ${accentColor}30`,
+                            opacity: isSameAsPrev ? 0 : 1,
+                            visibility: isSameAsPrev ? 'hidden' : 'visible'
+                          }}>
+                            {msg.role === 'user' ? <UserIcon size={14} color="#737373" /> : <Bot size={14} style={{ color: accentColor }} />}
+                          </div>
+                          
+                          <div style={{ maxWidth: '85%', display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: '6px' }}>
+                            <div style={{ 
+                              padding: '12px 18px', 
+                              borderRadius: '18px', 
+                              background: msg.role === 'user' ? accentColor : 'rgba(255, 255, 255, 0.02)', 
+                              color: msg.role === 'user' ? 'white' : '#EBEBEB', 
+                              fontSize: '13.5px', 
+                              border: msg.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.03)', 
+                              borderTopLeftRadius: msg.role === 'assistant' && !isSameAsPrev ? 0 : '18px', 
+                              borderTopRightRadius: msg.role === 'user' && !isSameAsPrev ? 0 : '18px', 
+                              lineHeight: '1.6',
+                              fontWeight: 400,
+                              boxShadow: msg.role === 'user' ? `0 4px 15px ${accentColor}30` : 'none',
+                              wordBreak: 'break-word',
+                              overflowWrap: 'anywhere'
+                            }}>
+                              {msg.content.split('\n').map((line, i) => <div key={i}>{line}</div>)}
+                            </div>
+                            {!isSameAsNext && (
+                              <span style={{ fontSize: '10px', color: '#404040', fontWeight: 600, textTransform: 'uppercase', padding: '0 4px' }}>{msg.timestamp}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                   {isTyping && (
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: `${accentColor}15`, border: `1px solid ${accentColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -483,32 +658,75 @@ export const AIChatbot = () => {
                             {showActionMenu && (
                               <motion.div
                                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                                style={{ position: 'absolute', bottom: '40px', left: 0, background: '#262626', borderRadius: '12px', padding: '8px', border: '1px solid #404040', width: '140px', zIndex: 4000 }}
+                                style={{ position: 'absolute', bottom: '45px', left: 0, background: '#1c1c1c', borderRadius: '14px', padding: '6px', border: '1px solid #333', width: '160px', zIndex: 4000, boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
                               >
-                                <button 
-                                  onClick={() => { setSelectedAction('run'); setShowActionMenu(false); }}
-                                  style={{ width: '100%', padding: '10px', background: 'transparent', border: 'none', color: '#EBEBEB', fontSize: '12px', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', borderRadius: '8px' }}
-                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                >
-                                  <Zap size={14} style={{ color: accentColor }} /> Run Workflow
-                                </button>
+                                {[
+                                  { id: 'run', icon: <Play size={14} />, label: 'Run Workflow', color: accentColor }
+                                ].map(action => (
+                                  <button 
+                                    key={action.id}
+                                    onClick={() => { 
+                                      setSelectedAction('run');
+                                      setShowActionMenu(false); 
+                                    }}
+                                    style={{ 
+                                      width: '100%', padding: '10px 12px', background: 'transparent', border: 'none', 
+                                      color: '#EBEBEB', fontSize: '13px', textAlign: 'left', cursor: 'pointer', 
+                                      display: 'flex', alignItems: 'center', gap: '10px', borderRadius: '10px',
+                                      transition: 'background 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                  >
+                                    <div style={{ color: action.color }}>{action.icon}</div>
+                                    {action.label}
+                                  </button>
+                                ))}
                               </motion.div>
                             )}
                           </AnimatePresence>
                         </div>
 
-                        {/* Action Tag */}
-                        {selectedAction && (
-                          <motion.div 
-                            initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: `${accentColor}20`, borderRadius: '12px', border: `1px solid ${accentColor}40` }}
-                          >
-                            <Zap size={12} style={{ color: accentColor }} />
-                            <span style={{ fontSize: '11px', color: accentColor, fontWeight: 700 }}>Run</span>
-                            <X size={10} style={{ color: accentColor, cursor: 'pointer' }} onClick={() => setSelectedAction(null)} />
-                          </motion.div>
-                        )}
+                        {/* Action Tag UI */}
+                        <AnimatePresence>
+                          {selectedAction && (
+                            <motion.div
+                              initial={{ opacity: 0, x: -10, scale: 0.9 }}
+                              animate={{ opacity: 1, x: 0, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              style={{ 
+                                background: `${accentColor}15`, 
+                                border: `1px solid ${accentColor}30`,
+                                borderRadius: '10px', 
+                                padding: '6px 10px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '8px',
+                                color: accentColor,
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.02em',
+                                boxShadow: `0 4px 12px ${accentColor}10`
+                              }}
+                            >
+                              <Play size={12} fill={accentColor} style={{ opacity: 0.8 }} />
+                              <span>{selectedAction}</span>
+                              <button 
+                                onClick={() => setSelectedAction(null)}
+                                style={{ 
+                                  background: 'transparent', border: 'none', color: accentColor, 
+                                  cursor: 'pointer', padding: '2px', display: 'flex',
+                                  borderRadius: '4px', transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = `${accentColor}20`}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <X size={12} strokeWidth={2.5} />
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       <button
@@ -533,6 +751,17 @@ export const AIChatbot = () => {
           </AnimatePresence>
         </div>
       </motion.div>
+      <AnimatePresence>
+        {showClearConfirm && (
+          <ConfirmModal 
+            title="Clear Chat History?"
+            message="This will permanently delete all messages in this conversation. This action cannot be undone."
+            confirmText="Clear Chat"
+            onConfirm={handleClearChat}
+            onCancel={() => setShowClearConfirm(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
