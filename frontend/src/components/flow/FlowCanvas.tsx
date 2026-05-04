@@ -14,6 +14,7 @@ import ColorEdge from '../../ColorEdge';
 import { ExecutionPanel } from '../../ExecutionPanel';
 import { FlowHeader } from '../layout/FlowHeader';
 import { FlowPalette } from './FlowPalette';
+import { ChatWidget } from '../ui/ChatWidget';
 import { useFlowViewModel } from '../../viewmodels/useFlowViewModel';
 import { useSettingsViewModel } from '../../viewmodels/useSettingsViewModel';
 import { useWorkspaceViewModel } from '../../viewmodels/useWorkspaceViewModel';
@@ -109,6 +110,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({ onRequestClear }) => {
           </ReactFlow>
           
           <ExecutionPanel />
+          <ChatWidget />
 
           {/* Floating Exit Zen Mode Button */}
           {isZenMode && (

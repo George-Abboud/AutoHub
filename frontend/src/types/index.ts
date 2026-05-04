@@ -39,5 +39,27 @@ export interface UserProfile {
   date_of_birth?: string;
   gender?: string;
   avatar_url?: string;
-  preferences?: Record<string, any>;
+  preferences?: Record<string, unknown>;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  action?: AgentAction;
+}
+
+export interface AgentAction {
+  type: 'addNode' | 'deleteNode' | 'connectNodes' | 'runWorkflow' | 'changeColor' | 'info';
+  payload?: Record<string, unknown>;
+}
+
+export interface AgentPayload {
+  message: string;
+  workspaceContext?: {
+    nodes: Array<{ id: string; type: string; data: Record<string, unknown> }>;
+    edges: Array<{ id: string; source: string; target: string }>;
+  };
+  apiKey?: string;
 }
