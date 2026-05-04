@@ -4,7 +4,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://bpsjgbbnlkybuc
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwc2pnYmJubGt5YnVjYm9xY2lnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4ODA4MzMsImV4cCI6MjA5MzQ1NjgzM30.UDg5KD8K9LfOH37FZ9UEqY_jkNGZV8LwykPcj3Nb-7Q';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Make sure .env.local is configured properly.');
+  throw new Error('[v2] Missing Supabase environment variables. Make sure .env.local is configured properly.');
 }
 
 /**
