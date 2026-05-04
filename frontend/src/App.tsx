@@ -14,6 +14,9 @@ import { supabase } from './lib/supabaseClient';
 import { ProfilePage } from './ProfilePage';
 import { useProfileViewModel } from './viewmodels/useProfileViewModel';
 import { ProfileSetupModal } from './components/ui/ProfileSetupModal';
+import { AIChatbot } from './components/ui/AIChatbot';
+import { GlobalLoader } from './components/ui/GlobalLoader';
+
 
 /**
  * Syncs the CSS custom properties (--accent-color, --accent-color-rgb)
@@ -84,53 +87,66 @@ function App() {
   }, [activeWorkspaceId, workspaces]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#171717', fontFamily: '"Inter", sans-serif' }}>
-      <ThemeSync />
-      <AnimatePresence mode="wait">
-        {currentView === 'home' && (
-          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <HomePage />
-          </motion.div>
-        )}
+    <div style={{ width: '100vw', height: '100vh', background: '#171717', fontFamily: '"Inter", sans-serif', display: 'flex', overflow: 'hidden' }}>
+      <div style={{ 
+        flex: 1, 
+        height: '100%', 
+        position: 'relative', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        overflow: 'hidden',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
+      }}>
+        <ThemeSync />
+        <AnimatePresence mode="wait">
+          {currentView === 'home' && (
+            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
+              <HomePage />
+            </motion.div>
+          )}
 
-        {currentView === 'docs' && (
-          <motion.div key="docs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <DocsPage />
-          </motion.div>
-        )}
+          {currentView === 'docs' && (
+            <motion.div key="docs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
+              <DocsPage />
+            </motion.div>
+          )}
 
-        {currentView === 'settings' && (
-          <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <SettingsPage />
-          </motion.div>
-        )}
+          {currentView === 'settings' && (
+            <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
+              <SettingsPage />
+            </motion.div>
+          )}
 
-        {currentView === 'profile' && (
-          <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ProfilePage />
-          </motion.div>
-        )}
+          {currentView === 'profile' && (
+            <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
+              <ProfilePage />
+            </motion.div>
+          )}
 
-        {currentView === 'editor' && (
-          <motion.div key="editor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ReactFlowProvider>
-              <FlowCanvas onRequestClear={() => setShowClearConfirm(true)} />
-              <AnimatePresence>
-                {showClearConfirm && (
-                  <ConfirmModal
-                    onConfirm={handleClearConfirm}
-                    onCancel={() => setShowClearConfirm(false)}
-                  />
-                )}
-              </AnimatePresence>
-            </ReactFlowProvider>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {currentView === 'editor' && (
+            <motion.div key="editor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ height: '100%' }}>
+              <ReactFlowProvider>
+                <FlowCanvas onRequestClear={() => setShowClearConfirm(true)} />
+                <AnimatePresence>
+                  {showClearConfirm && (
+                    <ConfirmModal
+                      onConfirm={handleClearConfirm}
+                      onCancel={() => setShowClearConfirm(false)}
+                    />
+                  )}
+                </AnimatePresence>
+              </ReactFlowProvider>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {user && !profile?.full_name && !isProfileLoading && (
-        <ProfileSetupModal />
-      )}
+        {user && !profile?.full_name && !isProfileLoading && (
+          <ProfileSetupModal />
+        )}
+      </div>
+      
+      <AIChatbot />
+      <GlobalLoader />
     </div>
   );
 }

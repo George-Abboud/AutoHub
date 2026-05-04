@@ -45,6 +45,7 @@ export interface UserProfile {
   last_ai_request_date: string;
 }
 
+
 export interface UserSettings {
   user_id: string;
   theme_mode: string;
@@ -54,24 +55,10 @@ export interface UserSettings {
   api_keys: Record<string, string>;
 }
 
-export interface ChatMessage {
+export type ChatMessage = {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  action?: AgentAction;
-}
+};
 
-export interface AgentAction {
-  type: 'addNode' | 'deleteNode' | 'connectNodes' | 'runWorkflow' | 'changeColor' | 'info';
-  payload?: Record<string, unknown>;
-}
-
-export interface AgentPayload {
-  message: string;
-  workspaceContext?: {
-    nodes: Array<{ id: string; type: string; data: Record<string, unknown> }>;
-    edges: Array<{ id: string; source: string; target: string }>;
-  };
-  apiKey?: string;
-}

@@ -4,14 +4,14 @@
 
 # AutoHub
 
-**Visual Automation Workflow Builder**
+**Visual Automation Workflow Builder with AI Intelligence**
 
-Design, compose, and execute multi-node automation pipelines through an intuitive drag-and-drop canvas — and watch your data flow in real time.
+Design, compose, and execute multi-node automation pipelines through an intuitive drag-and-drop canvas — now powered by Cloud Persistence and AI Assistance.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-F2572B?style=for-the-badge&logo=github)](https://george-abboud.github.io/AutoHub/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite)](https://vite.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-Cloud-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com)
+[![AI](https://img.shields.io/badge/AI-Gemini%20%2F%20OpenAI-blue?style=for-the-badge&logo=google-gemini)](https://deepmind.google/technologies/gemini/)
 
 </div>
 
@@ -25,55 +25,37 @@ Design, compose, and execute multi-node automation pipelines through an intuitiv
 
 ## ✨ Overview
 
-AutoHub is a high-fidelity visual automation workflow builder. It allows users to design and execute multi-node logical pipelines through a drag-and-drop canvas — no code required. The platform targets engineers and power users who need to visualize complex data flows and observe them executing step by step.
-
-> Think of it as a visual programming environment where data moves through connected nodes, and you can watch it happen live.
+AutoHub is a high-fidelity visual automation workflow builder. It allows users to design and execute multi-node logical pipelines through a drag-and-drop canvas. With the latest update, AutoHub now features **Cloud Sync** for persistent workspaces and an **AI Assistant** that helps you build and manage your automation flows using natural language.
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
+
+### ☁️ Cloud Persistence (Supabase)
+- **Automatic Syncing:** All nodes, edges, and settings are saved to the cloud in real-time.
+- **Multi-Device Support:** Access your workspaces from anywhere by logging in.
+- **Secure Authentication:** User profiles and settings are protected via Supabase Auth.
+
+### 🤖 AI Assistant (SaaS Ready)
+- **Natural Language Building:** Ask the bot to "Add a color node" or "Run the workflow" in Arabic or English.
+- **Usage Tracking:** Daily limits (20 requests/day) are enforced per user to manage costs.
+- **BYOK (Bring Your Own Key):** Users can add their own Gemini or OpenAI keys in settings to bypass daily limits and unlock advanced models.
+- **Glassmorphic Chat UI:** A sleek, non-intrusive chat bar at the bottom for quick interactions.
 
 ### 🗂️ Workspace Management
-- Create, rename, and delete multiple independent automation workspaces
-- Each workspace persists its full state (nodes, edges, execution history) across sessions
-- Dashboard view with workspace cards showing node count and creation date
+- Create, rename, and delete multiple independent automation workspaces.
+- Dashboard view with workspace cards showing node count and creation date.
 
 ### 🎨 Visual Flow Editor
-- **Drag-and-drop** canvas powered by React Flow
-- Three node types: **Trigger**, **Color**, **Log**
-- Connect nodes by drawing edges between handles
-- Supports **Bezier**, **Step**, and **Straight** edge routing
-- Solid and dashed edge pattern options
-- Three background grid modes: Dots, Lines, None
-- Snap-to-grid support
+- **Drag-and-drop** canvas powered by React Flow.
+- Three node types: **Trigger**, **Color**, **Log**.
+- Supports **Bezier**, **Step**, and **Straight** routing with customizable patterns.
+- Snap-to-grid support and multiple background modes.
 
 ### ⚡ Real-Time Execution Engine
-- Sequential, animated workflow execution with visual node highlighting
-- **Color propagation** — color data flows from node to node through edges
-- **Color mixing** — multiple upstream colors blend into a single averaged output
-- Live execution trace log with color-coded entries per node type
-- Execution timer showing total run duration
-- Last 5 execution runs saved per workspace
-
-### 🎛️ Node Types
-| Node | Role |
-|---|---|
-| **Workflow Trigger** | Entry point — starts and stops execution |
-| **Color Node** | Emits a color payload — pick from presets or a full hex/RGB picker |
-| **Log Node** | Output — displays a message and reflects upstream color data |
-
-### 🔒 Editor Controls
-- **Lock Mode** — freeze the canvas to prevent accidental edits
-- **Zen Mode** — hide all UI chrome for distraction-free viewing
-
-### 🎨 Theming
-- 6 selectable accent colors with live preview
-- Theme updates apply instantly across the entire UI
-- Accent color drives edges, handles, node highlights, and all UI elements
-
-### ⚙️ Settings and System
-- Per-user preferences persisted to localStorage
-- **Clear All Data** factory reset with confirmation dialog
+- Sequential, animated workflow execution with visual node highlighting.
+- **Color propagation** and **blending** logic.
+- Live execution trace log with color-coded entries.
 
 ---
 
@@ -81,37 +63,23 @@ AutoHub is a high-fidelity visual automation workflow builder. It allows users t
 
 | Category | Technology |
 |---|---|
-| Framework | React 19 + TypeScript 6 |
-| Build Tool | Vite 8 |
+| Frontend | React 19 + TypeScript 6 + Vite 8 |
+| Backend | Supabase (Database + Auth + Edge Functions) |
 | Canvas Engine | React Flow (`@xyflow/react` v12) |
-| State Management | Zustand 5 (with `persist` middleware) |
+| State Management | Zustand 5 |
 | Animations | Framer Motion 12 |
-| Icons | Lucide React |
-| Font | Inter (Google Fonts) |
-| Styling | Vanilla CSS (inline styles) + global overrides |
-| Deployment | GitHub Actions to GitHub Pages |
+| AI | Google Gemini Pro / OpenAI GPT-4 |
+| Styling | Vanilla CSS + Dynamic Theme Sync |
 
 ---
 
-## 🏗️ Architecture
-
-The project follows an **MVVM (Model–View–ViewModel)** pattern:
+## 🏗️ Architecture (MVVM)
 
 ```
-Model      →  src/store.ts           All state + business logic (Zustand)
-ViewModel  →  src/viewmodels/        Custom hooks composing state per View
-View       →  src/**/*.tsx           Pure UI — consumes state via ViewModels only
+Model      →  src/store.ts           All state + Supabase syncing logic
+ViewModel  →  src/viewmodels/        Business logic & Data transformation
+View       →  src/**/*.tsx           High-fidelity UI components
 ```
-
-### ViewModels
-
-| Hook | Responsibility |
-|---|---|
-| `useAppViewModel` | Global UI state: accent color, navigation, sidebar |
-| `useWorkspaceViewModel` | Workspace CRUD and selection |
-| `useFlowViewModel` | Canvas nodes/edges, lock, zen mode |
-| `useExecutionViewModel` | Workflow run/stop, live trace, execution time |
-| `useSettingsViewModel` | Visual preferences and factory reset |
 
 ---
 
@@ -120,17 +88,15 @@ View       →  src/**/*.tsx           Pure UI — consumes state via ViewModels
 ```
 src/
 ├── store.ts               Zustand store (Model)
-├── viewmodels/            MVVM ViewModels
+├── viewmodels/            MVVM ViewModels (Auth, Profile, Agent, etc.)
 ├── components/
-│   ├── flow/              Canvas components
-│   ├── layout/            Page layout shells
-│   └── ui/                Reusable UI atoms
+│   ├── flow/              Canvas & Palette components
+│   ├── layout/            Sidebar & Header shells
+│   └── ui/                Chat bar, Modals, Buttons
 ├── nodes/                 Custom React Flow nodes
-├── hooks/                 Global side-effect hooks
-├── types/                 Shared TypeScript types
-├── utils/                 Pure utility functions
-├── App.tsx                Root: routing + theme sync
-└── index.css              Global styles + React Flow overrides
+├── supabase/              Edge Functions (AI Proxy)
+├── types/                 TypeScript interfaces
+└── index.css              Global styles & dynamic theming
 ```
 
 ---
@@ -148,8 +114,6 @@ npm install
 # Start dev server
 npm run dev
 ```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 

@@ -43,12 +43,14 @@ export type AppState = {
   logs: LogEntry[];
   liveTrace: TraceEntry[];
   isSidebarOpen: boolean;
+  isAIChatbotOpen: boolean;
   isRunning: boolean;
   isLocked: boolean;
   isZenMode: boolean;
   runningNodeIds: string[];
   activeEdges: string[];
   executionTime: number;
+  isGlobalLoading: boolean;
 
   // Actions
   onNodesChange: OnNodesChange;
@@ -58,8 +60,11 @@ export type AppState = {
   updateEdgeStyles: () => void;
   deleteNode: (id: string) => void;
   toggleSidebar: (open?: boolean) => void;
+  toggleAIChatbot: (open?: boolean) => void;
   toggleLock: () => void;
+  setApiKey: (provider: string, key: string) => Promise<void>;
   toggleZenMode: () => void;
+  setGlobalLoading: (val: boolean) => void;
 
   runWorkflow: () => Promise<void>;
   stopWorkflow: () => void;
@@ -80,6 +85,10 @@ export type AppState = {
   loadInitialData: () => Promise<void>;
   syncWorkspace: (wsId: string) => Promise<void>;
   syncSettings: () => Promise<void>;
+  
+  // Chat Actions
+  loadChatMessages: () => Promise<any[]>;
+  saveChatMessage: (msg: ChatMessage) => Promise<void>;
 };
 
 const initialNodes: Node[] = [
@@ -109,12 +118,14 @@ export const useStore = create<AppState>()((set, get) => ({
       logs: [],
       liveTrace: [],
       isSidebarOpen: false,
+      isAIChatbotOpen: false,
       isRunning: false,
       isLocked: false,
       isZenMode: false,
       runningNodeIds: [],
       activeEdges: [],
       executionTime: 0,
+      isGlobalLoading: false,
 
       onNodesChange: (changes: NodeChange[]) => {
         const { activeWorkspaceId, workspaces } = get();
@@ -192,11 +203,13 @@ export const useStore = create<AppState>()((set, get) => ({
       },
 
       toggleSidebar: (open?: boolean) => set({ isSidebarOpen: open !== undefined ? open : !get().isSidebarOpen }),
+      toggleAIChatbot: (open?: boolean) => set({ isAIChatbotOpen: open !== undefined ? open : !get().isAIChatbotOpen }),
       toggleLock: () => set({ isLocked: !get().isLocked }),
       toggleZenMode: () => {
         set({ isZenMode: !get().isZenMode });
         get().syncSettings();
       },
+      setGlobalLoading: (val: boolean) => set({ isGlobalLoading: val }),
       clearLogs: () => {
         const { activeWorkspaceId, workspaces } = get();
         set({ 
@@ -345,6 +358,42 @@ export const useStore = create<AppState>()((set, get) => ({
         }
       },
 
+      loadChatMessages: async () => {
+        const user = get().user;
+        if (!user) return;
+        try {
+          const { data } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true });
+          
+          if (data) {
+            // Map data to ChatMessage type if needed
+            // (Assuming Supabase columns match our type)
+            return data as any; 
+          }
+        } catch (err) {
+          console.error('Failed to load chat:', err);
+        }
+        return [];
+      },
+
+      saveChatMessage: async (msg) => {
+        const user = get().user;
+        if (!user) return;
+        try {
+          await supabase.from('chat_messages').insert({
+            user_id: user.id,
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp
+          });
+        } catch (err) {
+          console.error('Failed to save message:', err);
+        }
+      },
+
       syncSettings: async () => {
         const user = get().user;
         if (!user) return;
@@ -363,10 +412,31 @@ export const useStore = create<AppState>()((set, get) => ({
         }
       },
 
+      setApiKey: async (provider: string, key: string) => {
+        const user = get().user;
+        const settings = get().settings;
+        if (!user || !settings) return;
+
+        const newApiKeys = { ...settings.api_keys, [provider]: key };
+        const newSettings = { ...settings, api_keys: newApiKeys };
+
+        set({ settings: newSettings });
+
+        try {
+          await supabase.from('user_settings').update({
+            api_keys: newApiKeys,
+            updated_at: new Date().toISOString()
+          }).eq('user_id', user.id);
+        } catch (err) {
+          console.error('Failed to save API key:', err);
+        }
+      },
+
       // Workspace Management
       createWorkspace: async (name: string) => {
+        get().setGlobalLoading(true);
         const user = get().user;
-        if (!user) return;
+        if (!user) { get().setGlobalLoading(false); return; }
 
         const newWsData = {
           user_id: user.id,
@@ -380,6 +450,7 @@ export const useStore = create<AppState>()((set, get) => ({
         
         if (error) {
           console.error('Error creating workspace:', error);
+          get().setGlobalLoading(false);
           return;
         }
 
@@ -400,12 +471,15 @@ export const useStore = create<AppState>()((set, get) => ({
           liveTrace: [],
           isRunning: false,
         }));
+        get().setGlobalLoading(false);
       },
 
       deleteWorkspace: async (id: string) => {
+        get().setGlobalLoading(true);
         const { error } = await supabase.from('workflows').delete().eq('id', id);
         if (error) {
           console.error('Error deleting workspace:', error);
+          get().setGlobalLoading(false);
           return;
         }
 
@@ -414,12 +488,15 @@ export const useStore = create<AppState>()((set, get) => ({
           activeWorkspaceId: state.activeWorkspaceId === id ? null : state.activeWorkspaceId,
           currentView: state.activeWorkspaceId === id ? 'home' : state.currentView
         }));
+        get().setGlobalLoading(false);
       },
 
       renameWorkspace: async (id: string, name: string) => {
+        get().setGlobalLoading(true);
         const { error } = await supabase.from('workflows').update({ name }).eq('id', id);
         if (error) {
           console.error('Error renaming workspace:', error);
+          get().setGlobalLoading(false);
           return;
         }
 
@@ -428,6 +505,7 @@ export const useStore = create<AppState>()((set, get) => ({
             ws.id === id ? { ...ws, name } : ws
           )
         }));
+        get().setGlobalLoading(false);
       },
 
       selectWorkspace: (id: string) => {

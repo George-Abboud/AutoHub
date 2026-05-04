@@ -14,7 +14,6 @@ import ColorEdge from '../../ColorEdge';
 import { ExecutionPanel } from '../../ExecutionPanel';
 import { FlowHeader } from '../layout/FlowHeader';
 import { FlowPalette } from './FlowPalette';
-import { ChatWidget } from '../ui/ChatWidget';
 import { useFlowViewModel } from '../../viewmodels/useFlowViewModel';
 import { useSettingsViewModel } from '../../viewmodels/useSettingsViewModel';
 import { useWorkspaceViewModel } from '../../viewmodels/useWorkspaceViewModel';
@@ -69,7 +68,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({ onRequestClear }) => {
   if (!activeWs) return null;
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', background: '#171717', overflow: 'hidden', position: 'relative', color: '#EBEBEB', fontFamily: '"Inter", sans-serif' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', background: '#171717', overflow: 'hidden', position: 'relative', color: '#EBEBEB', fontFamily: '"Inter", sans-serif' }}>
       {!isZenMode && <FlowPalette onAddNode={addNodeAtPos} />}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -110,7 +109,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({ onRequestClear }) => {
           </ReactFlow>
           
           <ExecutionPanel />
-          <ChatWidget />
+
 
           {/* Floating Exit Zen Mode Button */}
           {isZenMode && (

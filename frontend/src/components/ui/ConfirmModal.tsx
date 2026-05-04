@@ -7,9 +7,18 @@ import { Button } from './Button';
 interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
+  title?: string;
+  message?: string;
+  confirmText?: string;
 }
 
-export const ConfirmModal: React.FC<ConfirmModalProps> = ({ onConfirm, onCancel }) => {
+export const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
+  onConfirm, 
+  onCancel,
+  title = "Clear workspace?",
+  message = "This will permanently remove all nodes and edges from this workspace. This action cannot be undone.",
+  confirmText = "Clear Everything"
+}) => {
   const { accentColor } = useAppViewModel();
   
   return (
@@ -49,9 +58,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({ onConfirm, onCancel 
             <AlertTriangle size={24} color={accentColor} />
           </div>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#EBEBEB', margin: '0 0 10px 0' }}>Clear workspace?</h2>
+            <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#EBEBEB', margin: '0 0 10px 0' }}>{title}</h2>
             <p style={{ fontSize: '15px', color: '#737373', margin: 0, lineHeight: 1.6, fontWeight: 500 }}>
-              This will permanently remove all nodes and edges from this workspace. This action cannot be undone.
+              {message}
             </p>
           </div>
         </div>
@@ -71,7 +80,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({ onConfirm, onCancel 
             onClick={onConfirm}
             style={{ flex: 2, borderRadius: '14px', background: `linear-gradient(135deg, ${accentColor} 0%, #ff8272 100%)` }}
           >
-            Clear Everything
+            {confirmText}
           </Button>
         </div>
       </motion.div>

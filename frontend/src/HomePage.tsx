@@ -9,6 +9,8 @@ import { useWorkspaceViewModel } from './viewmodels/useWorkspaceViewModel';
 import { useAppViewModel } from './viewmodels/useAppViewModel';
 import { useAuthViewModel } from './viewmodels/useAuthViewModel';
 import { AuthModal } from './components/ui/AuthModal';
+import { useStore } from './store';
+import { ConfirmModal } from './components/ui/ConfirmModal';
 
 export const HomePage = () => {
   const { workspaces, createWorkspace, deleteWorkspace, selectWorkspace, renameWorkspace } = useWorkspaceViewModel();
@@ -20,6 +22,9 @@ export const HomePage = () => {
   // Rename state
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
   const [renameValue, setRenameValue] = useState('');
+
+  // Delete confirmation
+  const [wsToDelete, setWsToDelete] = useState<string | null>(null);
 
   // Enable scrolling on body only for HomePage
   useEffect(() => {
@@ -51,6 +56,15 @@ export const HomePage = () => {
       setRenameTarget(null);
     }
   };
+
+  const confirmDelete = () => {
+    if (wsToDelete) {
+      deleteWorkspace(wsToDelete);
+      setWsToDelete(null);
+    }
+  };
+
+  const isAIChatbotOpen = useStore(s => s.isAIChatbotOpen);
 
   if (!user) {
     return (
@@ -129,8 +143,9 @@ export const HomePage = () => {
         ) : (
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
-            gap: '32px' 
+            gridTemplateColumns: 'repeat(3, 1fr)', 
+            gap: '32px',
+            transition: 'grid-template-columns 0.4s ease'
           }}>
             <AnimatePresence>
               {workspaces.map((ws, i) => (
@@ -181,7 +196,7 @@ export const HomePage = () => {
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.2, color: accentColor }}
-                        onClick={(e) => { e.stopPropagation(); deleteWorkspace(ws.id); }}
+                        onClick={(e) => { e.stopPropagation(); setWsToDelete(ws.id); }}
                         style={{ 
                           background: 'transparent', border: 'none', 
                           color: '#404040', cursor: 'pointer', padding: '6px',
@@ -392,6 +407,19 @@ export const HomePage = () => {
               </div>
             </motion.form>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation */}
+      <AnimatePresence>
+        {wsToDelete && (
+          <ConfirmModal 
+            title="Delete Workspace?"
+            message="This will permanently delete the entire workspace and all its data. This action cannot be undone."
+            confirmText="Delete Permanently"
+            onConfirm={confirmDelete}
+            onCancel={() => setWsToDelete(null)}
+          />
         )}
       </AnimatePresence>
     </div>
