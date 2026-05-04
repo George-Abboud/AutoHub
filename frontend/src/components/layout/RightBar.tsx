@@ -1,4 +1,4 @@
-import { Bot, Settings } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useStore } from '../../store';
 

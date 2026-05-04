@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calendar, Layout, ChevronRight, Zap, Pencil, Cloud, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Calendar, Layout, ChevronRight, Zap, Pencil, Cloud } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './components/ui/Button';
 import { AnimatedBackground } from './components/layout/AnimatedBackground';
@@ -13,7 +13,7 @@ import { useStore } from './store';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 
 export const HomePage = () => {
-  const { workspaces, createWorkspace, deleteWorkspace, selectWorkspace, renameWorkspace, loadInitialData } = useWorkspaceViewModel();
+  const { workspaces, createWorkspace, deleteWorkspace, selectWorkspace, renameWorkspace } = useWorkspaceViewModel();
   const { accentColor } = useAppViewModel();
   const { user } = useAuthViewModel();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,9 +64,7 @@ export const HomePage = () => {
     }
   };
 
-  const isAIChatbotOpen = useStore(s => s.isAIChatbotOpen);
   const isSyncing = useStore(s => s.isSyncing);
-  const isGlobalLoading = useStore(s => s.isGlobalLoading);
   const isFetching = useStore(s => s.isFetching);
 
   if (!user) {

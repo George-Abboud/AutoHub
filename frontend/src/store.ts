@@ -16,7 +16,7 @@ import type {
 import type { User } from '@supabase/supabase-js';
 
 import { supabase } from './lib/supabaseClient';
-import type { LogEntry, TraceEntry, Workspace, UserProfile, UserSettings } from './types';
+import type { LogEntry, TraceEntry, Workspace, UserProfile, UserSettings, ChatMessage } from './types';
 import { getSourceColor, mixColors } from './utils/colors';
 
 export type AppState = {

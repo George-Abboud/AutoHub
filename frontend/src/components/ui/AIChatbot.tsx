@@ -1,32 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Send, 
   Settings, 
   Sparkles, 
-  Key,
   ChevronLeft,
   Bot,
   User as UserIcon,
   Loader2,
-  ChevronRight,
-  ChevronLeft as ChevronLeftIcon,
   Zap,
-  PlayCircle,
-  Plus,
   Play,
-  Trash2,
-  MessageSquare
+  Trash2
 } from 'lucide-react';
 import { useStore } from '../../store';
 import type { ChatMessage } from '../../types';
 import { ConfirmModal } from './ConfirmModal';
 
-const PRESET_RESPONSES: Record<string, string> = {
-  "default": "Welcome to AutoHub AI! I'm here to help you automate your workflows. Provide a Gemini or Groq API Key in settings for advanced assistance.",
-  "nodes": "We currently support:\n- Start Node: The beginning of every workflow.\n- Color Node: Changes the data color flowing through edges.\n- Log Node: Outputs text to the execution console.",
-};
 
 const SIDEBAR_WIDTH = 350;
 
@@ -327,7 +317,9 @@ export const AIChatbot = () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Re-fetch fresh data after navigation to see current nodes/edges in the updated store
-      ws = useStore.getState().workspaces.find(w => w.id === ws.id)!;
+      const updatedWs = useStore.getState().workspaces.find(w => w.id === (ws?.id || ""));
+      if (!updatedWs) return;
+      ws = updatedWs;
     }
 
     // --- CASE 1: Validation Phase (Now that we are inside the workspace) ---
