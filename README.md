@@ -25,7 +25,7 @@ Design, compose, and execute multi-node automation pipelines through an intuitiv
 
 ## ✨ Overview
 
-AutoHub is a high-fidelity visual automation workflow builder. It allows users to design and execute multi-node logical pipelines through a drag-and-drop canvas. With the latest update, AutoHub now features **Cloud Sync** for persistent workspaces and an **AI Assistant** that helps you build and manage your automation flows using natural language.
+AutoHub is a high-fidelity visual automation workflow builder. It allows users to design and execute multi-node logical pipelines through a drag-and-drop canvas. With the latest update, AutoHub now features **Full Cloud Synchronization**, a **Side-Panel AI Assistant**, and a **Premium Global Loading System** for a seamless, professional experience.
 
 ---
 
@@ -33,24 +33,25 @@ AutoHub is a high-fidelity visual automation workflow builder. It allows users t
 
 ### ☁️ Cloud Persistence (Supabase)
 - **Automatic Syncing:** All nodes, edges, and settings are saved to the cloud in real-time.
-- **Multi-Device Support:** Access your workspaces from anywhere by logging in.
-- **Secure Authentication:** User profiles and settings are protected via Supabase Auth.
+- **Global Sync Loader:** A premium, glassmorphic loading overlay ("Syncing Reality") ensures data integrity during background operations.
+- **Secure Authentication:** User profiles and workspaces are protected via Supabase Auth.
 
-### 🤖 AI Assistant (SaaS Ready)
-- **Natural Language Building:** Ask the bot to "Add a color node" or "Run the workflow" in Arabic or English.
-- **Usage Tracking:** Daily limits (20 requests/day) are enforced per user to manage costs.
-- **BYOK (Bring Your Own Key):** Users can add their own Gemini or OpenAI keys in settings to bypass daily limits and unlock advanced models.
-- **Glassmorphic Chat UI:** A sleek, non-intrusive chat bar at the bottom for quick interactions.
+### 🤖 Side-Panel AI Assistant
+- **Expanded Control:** The assistant can now create, connect, and run workflows through natural language commands.
+- **Improved Stability:** Fixed layout shifting; the assistant now slides in without disrupting the canvas or dashboard layout.
+- **Multi-Engine Support:** Powered by **Groq (Llama 3)** and **Google Gemini** for lightning-fast responses.
+- **BYOK Support:** Add your own keys in settings for unlimited usage and advanced model selection.
 
 ### 🗂️ Workspace Management
-- Create, rename, and delete multiple independent automation workspaces.
-- Dashboard view with workspace cards showing node count and creation date.
+- **Dashboard 2.0:** High-fidelity workspace cards with stable 3-column grid layout.
+- **Safety First:** Confirmation dialogs for both **Deleting Workspaces** (permanent) and **Clearing Canvas** (reset).
+- **MVVM Architecture:** Clean separation of logic and view for high performance.
 
 ### 🎨 Visual Flow Editor
 - **Drag-and-drop** canvas powered by React Flow.
-- Three node types: **Trigger**, **Color**, **Log**.
+- Three node types: **Start Node**, **Color Node**, **Log Node**.
 - Supports **Bezier**, **Step**, and **Straight** routing with customizable patterns.
-- Snap-to-grid support and multiple background modes.
+- **Zen Mode:** Focus on your workflow by hiding all UI elements with a single click.
 
 ### ⚡ Real-Time Execution Engine
 - Sequential, animated workflow execution with visual node highlighting.

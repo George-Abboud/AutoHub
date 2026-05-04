@@ -17,6 +17,7 @@ export const DocsPage = () => {
     { id: 'getting-started', title: 'Quick Start', icon: Rocket },
     { id: 'nodes', title: 'Node Architecture', icon: Layers },
     { id: 'execution', title: 'Trace Engine', icon: Cpu },
+    { id: 'cloud-ai', title: 'Cloud & AI', icon: Zap },
   ];
 
   return (
@@ -242,6 +243,50 @@ export const DocsPage = () => {
                         <p style={{ margin: 0, fontSize: '14px', color: '#737373', lineHeight: '1.6' }}>{node.desc}</p>
                       </div>
                     ))}
+                  </div>
+                </section>
+              )}
+
+              {activeSection === 'cloud-ai' && (
+                <section>
+                  <h1 style={{ fontSize: '40px', fontWeight: 900, marginBottom: '24px', letterSpacing: '-0.02em' }}>Cloud & Intelligence</h1>
+                  <p style={{ color: '#A3A3A3', fontSize: '17px', lineHeight: 1.6, marginBottom: '40px' }}>
+                    AutoHub is more than just a visual editor; it's a persistent, intelligent environment. 
+                    Every project is synchronized with your secure cloud vault, ensuring your work is never lost.
+                  </p>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    <div style={{ background: '#1c1c1c', padding: '32px', borderRadius: '28px', border: '1px solid #262626' }}>
+                      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                        <div style={{ width: '48px', height: '48px', background: `${accentColor}1a`, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Rocket size={24} color={accentColor} />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 800 }}>Syncing Reality Engine</h4>
+                          <p style={{ margin: 0, fontSize: '14px', color: '#737373', lineHeight: '1.6' }}>
+                            Our proprietary synchronization system monitors every node change and edge connection. 
+                            The <strong>Global Loader</strong> overlay provides visual feedback when data is being secured, 
+                            ensuring zero data loss and multi-device persistence.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#1c1c1c', padding: '32px', borderRadius: '28px', border: '1px solid #262626' }}>
+                      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                        <div style={{ width: '48px', height: '48px', background: `${accentColor}1a`, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Cpu size={24} color={accentColor} />
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 800 }}>Hybrid AI Assistant</h4>
+                          <p style={{ margin: 0, fontSize: '14px', color: '#737373', lineHeight: '1.6' }}>
+                            Powered by Llama 3 and Gemini, the assistant can understand complex natural language 
+                            to build and manage your workflows. Simply ask it to "Connect the start node to the log" 
+                            or "Run this automation," and watch it execute your command with precision.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </section>
               )}
