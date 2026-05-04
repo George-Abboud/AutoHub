@@ -32,3 +32,12 @@ export type Workspace = {
   history: ExecutionRun[];
   createdAt: string;
 };
+
+export interface UserProfile {
+  id: string;
+  full_name: string;
+  date_of_birth?: string;
+  gender?: string;
+  avatar_url?: string;
+  preferences?: Record<string, any>;
+}

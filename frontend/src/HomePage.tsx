@@ -7,10 +7,13 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Logo } from './components/ui/Logo';
 import { useWorkspaceViewModel } from './viewmodels/useWorkspaceViewModel';
 import { useAppViewModel } from './viewmodels/useAppViewModel';
+import { useAuthViewModel } from './viewmodels/useAuthViewModel';
+import { AuthModal } from './components/ui/AuthModal';
 
 export const HomePage = () => {
   const { workspaces, createWorkspace, deleteWorkspace, selectWorkspace, renameWorkspace } = useWorkspaceViewModel();
   const { accentColor } = useAppViewModel();
+  const { user } = useAuthViewModel();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newWsName, setNewWsName] = useState('');
 
@@ -49,6 +52,15 @@ export const HomePage = () => {
     }
   };
 
+  if (!user) {
+    return (
+      <div style={{ height: '100vh', background: '#171717', position: 'relative' }}>
+        <AnimatedBackground />
+        <AuthModal />
+      </div>
+    );
+  }
+
   return (
     <div style={{ 
       height: '100vh',
@@ -85,15 +97,16 @@ export const HomePage = () => {
               Architect, deploy, and scale your intelligent automation workflows with surgical precision.
             </p>
           </div>
-          
-          <Button
-            size="lg"
-            icon={<Plus size={18} strokeWidth={3} />}
-            onClick={() => setIsModalOpen(true)}
-            style={{ padding: '16px 32px', borderRadius: '16px' }}
-          >
-            Create Workspace
-          </Button>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <Button
+              size="lg"
+              icon={<Plus size={18} strokeWidth={3} />}
+              onClick={() => setIsModalOpen(true)}
+              style={{ padding: '16px 32px', borderRadius: '16px' }}
+            >
+              Create Workspace
+            </Button>
+          </div>
         </motion.div>
 
         {/* Workspaces Grid */}

@@ -5,21 +5,18 @@ import { useSettingsViewModel } from './viewmodels/useSettingsViewModel';
 import { type AppState } from './store';
 import { 
   Monitor, Palette, 
-  Grid3X3, Check,
-  ShieldAlert, RotateCcw
+  Grid3X3, Check
 } from 'lucide-react';
 
 export const SettingsPage = () => {
-  const { accentColor, gridStyle, edgeType, snapToGrid, edgePattern, resetStore, updateSetting } = useSettingsViewModel();
+  const { accentColor, gridStyle, edgeType, snapToGrid, edgePattern, updateSetting } = useSettingsViewModel();
   
   const [activeTab, setActiveTab] = useState('canvas');
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const tabs = [
     { id: 'canvas', title: 'Canvas', icon: Monitor },
     { id: 'lines', title: 'Lines', icon: Grid3X3 },
     { id: 'theme', title: 'Theme', icon: Palette },
-    { id: 'system', title: 'System', icon: ShieldAlert },
   ];
   const colors = [
     { name: 'Spectrum Orange', hex: '#f2572b' },
@@ -222,35 +219,7 @@ export const SettingsPage = () => {
                   </div>
                 )}
 
-                {activeTab === 'system' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                    <div style={{ 
-                      padding: '32px', background: 'rgba(239, 68, 68, 0.05)', 
-                      border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '24px' 
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                        <div style={{ width: '40px', height: '40px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <ShieldAlert size={20} color="#ef4444" />
-                        </div>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: '#ef4444' }}>Danger Zone</h3>
-                      </div>
-                      <p style={{ color: '#A3A3A3', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px', maxWidth: '500px' }}>
-                        Clearing all data will permanently delete all workspaces, execution logs, and reset all your preferences to default. This action cannot be undone.
-                      </p>
-                      <button
-                        onClick={() => setShowResetConfirm(true)}
-                        style={{
-                          padding: '12px 24px', background: '#ef4444', color: 'white',
-                          border: 'none', borderRadius: '12px', fontWeight: 700,
-                          cursor: 'pointer', transition: 'all 0.2s',
-                          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
-                        }}
-                      >
-                        Clear All Data
-                      </button>
-                    </div>
-                  </div>
-                )}
+
 
               </motion.div>
             </AnimatePresence>
@@ -258,59 +227,7 @@ export const SettingsPage = () => {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showResetConfirm && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-          }}>
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              style={{
-                background: '#171717', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '32px', padding: '40px', width: '100%', maxWidth: '440px',
-                boxShadow: '0 30px 60px rgba(0,0,0,0.6)', textAlign: 'center'
-              }}
-            >
-              <div style={{ 
-                width: '64px', height: '64px', background: 'rgba(239, 68, 68, 0.1)', 
-                borderRadius: '20px', display: 'flex', alignItems: 'center', 
-                justifyContent: 'center', margin: '0 auto 24px auto' 
-              }}>
-                <RotateCcw size={32} color="#ef4444" />
-              </div>
-              <h2 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '12px' }}>Reset AutoHub?</h2>
-              <p style={{ color: '#737373', lineHeight: 1.6, marginBottom: '32px' }}>
-                You are about to factory reset the entire platform. Every workspace and setting will be lost forever.
-              </p>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <button
-                  onClick={() => setShowResetConfirm(false)}
-                  style={{
-                    flex: 1, padding: '14px', background: '#262626', color: '#A3A3A3',
-                    border: 'none', borderRadius: '14px', fontWeight: 700, cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => resetStore()}
-                  style={{
-                    flex: 1, padding: '14px', background: '#ef4444', color: 'white',
-                    border: 'none', borderRadius: '14px', fontWeight: 700, cursor: 'pointer',
-                    boxShadow: '0 8px 16px rgba(239, 68, 68, 0.2)'
-                  }}
-                >
-                  Reset Everything
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 };

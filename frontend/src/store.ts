@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import {
   addEdge,
   applyNodeChanges,
@@ -15,12 +14,17 @@ import type {
   OnConnect,
 } from '@xyflow/react';
 
-import type { LogEntry, TraceEntry, Workspace } from './types';
+import type { LogEntry, TraceEntry, Workspace, UserProfile } from './types';
 import { getSourceColor, mixColors } from './utils/colors';
+import type { User } from '@supabase/supabase-js';
 
 export type AppState = {
+  // Auth & Profile
+  user: User | null;
+  profile: UserProfile | null;
+
   // Navigation
-  currentView: 'home' | 'editor' | 'docs' | 'settings';
+  currentView: 'home' | 'editor' | 'docs' | 'settings' | 'profile';
   
   // Customization
   accentColor: string;
@@ -66,6 +70,10 @@ export type AppState = {
   selectWorkspace: (id: string) => void;
   goHome: () => void;
   resetStore: () => void;
+  
+  // Auth Actions
+  setUser: (user: User | null) => void;
+  setProfile: (profile: UserProfile | null) => void;
 };
 
 const initialNodes: Node[] = [
@@ -78,9 +86,9 @@ const initialNodes: Node[] = [
   },
 ];
 
-export const useStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+export const useStore = create<AppState>()((set, get) => ({
+      user: null,
+      profile: null,
       currentView: 'home',
       workspaces: [],
       activeWorkspaceId: null,
@@ -203,7 +211,6 @@ export const useStore = create<AppState>()(
           activeEdges: [],
           executionTime: 0
         });
-        localStorage.clear();
         window.location.reload();
       },
       stopWorkflow: () => {
@@ -238,6 +245,10 @@ export const useStore = create<AppState>()(
 
         set({ workspaces: updatedWorkspaces });
       },
+
+      // Auth & Profile
+      setUser: (user) => set({ user }),
+      setProfile: (profile) => set({ profile }),
 
       // Workspace Management
       createWorkspace: (name: string) => {
@@ -432,18 +443,4 @@ export const useStore = create<AppState>()(
           get().updateEdgeStyles();
         }
       },
-    }),
-    {
-      name: 'spectrum-settings',
-      partialize: (state) => ({
-        workspaces: state.workspaces,
-        accentColor: state.accentColor,
-        gridStyle: state.gridStyle,
-        edgeType: state.edgeType,
-        snapToGrid: state.snapToGrid,
-        edgePattern: state.edgePattern,
-        activeWorkspaceId: state.activeWorkspaceId,
-      }),
-    }
-  )
-);
+}));

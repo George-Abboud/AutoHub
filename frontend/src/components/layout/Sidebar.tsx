@@ -1,4 +1,4 @@
-import { Layout, FileText, Settings } from 'lucide-react';
+import { Layout, FileText, Settings, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useStore } from '../../store';
 import { useAppViewModel } from '../../viewmodels/useAppViewModel';
@@ -12,6 +12,7 @@ export const Sidebar = () => {
     { icon: Layout, label: 'My Workspaces', view: 'home' },
     { icon: FileText, label: 'Docs', view: 'docs' },
     { icon: Settings, label: 'Settings', view: 'settings' },
+    { icon: User, label: 'Profile', view: 'profile' },
   ];
 
   return (
@@ -38,7 +39,7 @@ export const Sidebar = () => {
             whileHover={{ scale: 1.1, background: 'rgba(255,255,255,0.05)' }}
             whileTap={{ scale: 0.9 }}
             onClick={() => {
-              if (item.view === 'home' || item.view === 'activity' || item.view === 'docs' || item.view === 'settings') {
+              if (item.view === 'home' || item.view === 'activity' || item.view === 'docs' || item.view === 'settings' || item.view === 'profile') {
                 useStore.setState({ currentView: item.view as any });
               }
             }}

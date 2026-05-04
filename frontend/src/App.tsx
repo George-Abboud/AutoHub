@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useStore } from './store';
@@ -10,6 +10,10 @@ import { FlowCanvas } from './components/flow/FlowCanvas';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import { hexToRgb } from './utils/colors';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { supabase } from './lib/supabaseClient';
+import { ProfilePage } from './ProfilePage';
+import { useProfileViewModel } from './viewmodels/useProfileViewModel';
+import { ProfileSetupModal } from './components/ui/ProfileSetupModal';
 
 /**
  * Syncs the CSS custom properties (--accent-color, --accent-color-rgb)
@@ -45,9 +49,67 @@ function App() {
   const currentView = useStore(s => s.currentView);
   const activeWorkspaceId = useStore(s => s.activeWorkspaceId);
   const workspaces = useStore(s => s.workspaces);
+  const setUser = useStore(s => s.setUser);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
+  useEffect(() => {
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setUser]);
+
   useKeyboardShortcuts();
+
+  const { user, profile, isLoading: isProfileLoading, updateProfile } = useProfileViewModel();
+
+  const hasLoadedPrefs = useRef(false);
+  useEffect(() => {
+    if (profile?.preferences && !hasLoadedPrefs.current) {
+      useStore.setState(profile.preferences);
+      hasLoadedPrefs.current = true;
+    }
+    if (!profile) hasLoadedPrefs.current = false;
+  }, [profile]);
+
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!profile || !hasLoadedPrefs.current) return;
+    const unsub = useStore.subscribe((state, prevState) => {
+      if (
+        state.accentColor !== prevState.accentColor ||
+        state.gridStyle !== prevState.gridStyle ||
+        state.edgeType !== prevState.edgeType ||
+        state.snapToGrid !== prevState.snapToGrid ||
+        state.edgePattern !== prevState.edgePattern ||
+        state.workspaces !== prevState.workspaces ||
+        state.activeWorkspaceId !== prevState.activeWorkspaceId
+      ) {
+        if (syncTimer.current) clearTimeout(syncTimer.current);
+        syncTimer.current = setTimeout(() => {
+          updateProfile({
+            preferences: {
+              accentColor: state.accentColor,
+              gridStyle: state.gridStyle,
+              edgeType: state.edgeType,
+              snapToGrid: state.snapToGrid,
+              edgePattern: state.edgePattern,
+              workspaces: state.workspaces,
+              activeWorkspaceId: state.activeWorkspaceId
+            }
+          });
+        }, 2000);
+      }
+    });
+    return unsub;
+  }, [profile, updateProfile]);
 
   const handleClearConfirm = useCallback(() => {
     if (!activeWorkspaceId) return;
@@ -83,6 +145,12 @@ function App() {
           </motion.div>
         )}
 
+        {currentView === 'profile' && (
+          <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <ProfilePage />
+          </motion.div>
+        )}
+
         {currentView === 'editor' && (
           <motion.div key="editor" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <ReactFlowProvider>
@@ -99,6 +167,10 @@ function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {user && !profile?.full_name && !isProfileLoading && (
+        <ProfileSetupModal />
+      )}
     </div>
   );
 }
