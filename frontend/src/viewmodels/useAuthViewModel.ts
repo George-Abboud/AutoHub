@@ -18,8 +18,9 @@ export const useAuthViewModel = () => {
     try {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during sign up.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'An error occurred during sign up.';
+      setError(msg);
       throw err;
     } finally {
       setIsLoading(false);
@@ -32,8 +33,9 @@ export const useAuthViewModel = () => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-    } catch (err: any) {
-      setError(err.message || 'Invalid login credentials.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Invalid login credentials.';
+      setError(msg);
       throw err;
     } finally {
       setIsLoading(false);
@@ -46,7 +48,7 @@ export const useAuthViewModel = () => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       useStore.getState().resetStore();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error signing out:', err);
     } finally {
       setIsLoading(false);
@@ -61,8 +63,9 @@ export const useAuthViewModel = () => {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
       setSuccessMsg('Password reset link sent to your email.');
-    } catch (err: any) {
-      setError(err.message || 'Could not send reset link.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not send reset link.';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -76,8 +79,9 @@ export const useAuthViewModel = () => {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       setSuccessMsg('Password updated successfully.');
-    } catch (err: any) {
-      setError(err.message || 'Could not update password.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not update password.';
+      setError(msg);
       throw err;
     } finally {
       setIsLoading(false);

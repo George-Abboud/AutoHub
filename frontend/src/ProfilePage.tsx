@@ -60,8 +60,8 @@ export const ProfilePage = () => {
       
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
       await updateProfile({ avatar_url: data.publicUrl });
-    } catch (err: any) {
-      console.error('Error uploading avatar:', err.message);
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
       alert('Error uploading avatar. Make sure you created the "avatars" bucket.');
     } finally {
       setUploadingAvatar(false);
@@ -74,8 +74,8 @@ export const ProfilePage = () => {
     setUploadingAvatar(true);
     try {
       await updateProfile({ avatar_url: null as any });
-    } catch (err: any) {
-      console.error('Error removing avatar:', err.message);
+    } catch (err) {
+      console.error('Error removing avatar:', err);
     } finally {
       setUploadingAvatar(false);
     }

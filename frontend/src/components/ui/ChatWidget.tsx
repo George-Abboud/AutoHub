@@ -5,11 +5,14 @@ import { useAgentViewModel } from '../../viewmodels/useAgentViewModel';
 import { useAppViewModel } from '../../viewmodels/useAppViewModel';
 
 export const ChatWidget = () => {
-  const { accentColor } = useAppViewModel();
-  const { messages, isThinking, sendMessage, clearMessages } = useAgentViewModel();
+  const { accentColor, profile, settings } = useAppViewModel();
+  const { messages, isThinking, error, sendMessage, clearMessages } = useAgentViewModel();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const hasCustomKey = settings?.api_keys?.gemini || settings?.api_keys?.openai;
+  const remaining = profile ? Math.max(0, profile.ai_daily_limit - profile.ai_requests_count) : 0;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,6 +59,11 @@ export const ChatWidget = () => {
             >
               <Sparkles size={18} color={accentColor} />
               Ask AI Assistant
+              {!hasCustomKey && (
+                <span style={{ fontSize: '10px', background: `${accentColor}33`, padding: '2px 6px', borderRadius: '6px', color: accentColor }}>
+                  {remaining} left
+                </span>
+              )}
             </motion.button>
           </motion.div>
         )}
@@ -86,7 +94,14 @@ export const ChatWidget = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Bot size={16} color={accentColor} />
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#EBEBEB', letterSpacing: '0.02em' }}>AI ASSISTANT</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#EBEBEB', letterSpacing: '0.02em' }}>
+                  {hasCustomKey ? 'CUSTOM AI MODEL' : 'AUTOHUB AGENT'}
+                </span>
+                {!hasCustomKey && profile && (
+                  <span style={{ fontSize: '10px', color: '#737373', marginLeft: '8px' }}>
+                    Usage: {profile.ai_requests_count}/{profile.ai_daily_limit} today
+                  </span>
+                )}
                 {isThinking && (
                   <motion.div 
                     animate={{ opacity: [0.4, 1, 0.4] }} 
@@ -174,6 +189,11 @@ export const ChatWidget = () => {
                   </div>
                 </motion.div>
               ))}
+              {error && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#ef4444', fontSize: '12px', textAlign: 'center', padding: '10px' }}>
+                  {error}
+                </motion.div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 

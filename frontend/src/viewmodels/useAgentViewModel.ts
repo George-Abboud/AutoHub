@@ -9,22 +9,33 @@ import type { ChatMessage, AgentAction } from '../types';
  * and executing returned agent actions on the canvas.
  */
 export const useAgentViewModel = () => {
+  const profile = useStore(s => s.profile);
+  const settings = useStore(s => s.settings);
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'system',
-      content: 'Hi! I\'m your AutoHub assistant. I can help you build workflows — try asking me to add nodes, connect them, or run your workflow.',
+      content: 'Hi! I\'m your AutoHub assistant. I can help you build workflows. Try asking me to add nodes or run your workflow.',
       timestamp: new Date().toLocaleTimeString(),
     },
   ]);
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const canSendRequest = () => {
+    if (!profile) return false;
+    if (settings?.api_keys?.gemini || settings?.api_keys?.openai) return true;
+    const today = new Date().toISOString().split('T')[0];
+    const lastRequestDate = profile.last_ai_request_date?.split('T')[0];
+    if (lastRequestDate !== today) return true;
+    return profile.ai_requests_count < profile.ai_daily_limit;
+  };
+
   const executeAction = useCallback((action: AgentAction) => {
     const state = useStore.getState();
     const { activeWorkspaceId, workspaces, accentColor } = state;
     if (!activeWorkspaceId) return;
-
     const ws = workspaces.find(w => w.id === activeWorkspaceId);
     if (!ws) return;
 
@@ -48,9 +59,9 @@ export const useAgentViewModel = () => {
               : w
           ),
         });
+        state.syncWorkspace(activeWorkspaceId);
         break;
       }
-
       case 'deleteNode': {
         const nodeId = action.payload?.nodeId as string;
         if (!nodeId || nodeId === 'start-1') break;
@@ -65,31 +76,29 @@ export const useAgentViewModel = () => {
               : w
           ),
         });
+        state.syncWorkspace(activeWorkspaceId);
         break;
       }
-
-      case 'runWorkflow': {
-        state.runWorkflow();
-        break;
-      }
-
+      case 'runWorkflow': state.runWorkflow(); break;
       case 'changeColor': {
         const newColor = action.payload?.color as string;
         if (newColor) {
           useStore.setState({ accentColor: newColor });
+          state.syncSettings();
         }
         break;
       }
-
-      default:
-        break;
     }
   }, []);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
-    setError(null);
+    if (!canSendRequest()) {
+      setError('You have reached your daily limit. Please add your own API key in settings to continue.');
+      return;
+    }
 
+    setError(null);
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -102,17 +111,31 @@ export const useAgentViewModel = () => {
     try {
       const state = useStore.getState();
       const ws = state.workspaces.find(w => w.id === state.activeWorkspaceId);
-
       const context = ws ? {
         nodes: ws.nodes.map(n => ({ id: n.id, type: n.type as string, data: n.data as Record<string, unknown> })),
         edges: ws.edges.map(e => ({ id: e.id, source: e.source, target: e.target })),
       } : undefined;
 
       const { data, error: fnError } = await supabase.functions.invoke('chat-agent', {
-        body: { message: text.trim(), workspaceContext: context },
+        body: { 
+          message: text.trim(), 
+          workspaceContext: context,
+          customKeys: settings?.api_keys 
+        },
       });
 
       if (fnError) throw fnError;
+
+      // Update usage count in profile
+      if (profile && !settings?.api_keys?.gemini && !settings?.api_keys?.openai) {
+        const today = new Date().toISOString().split('T')[0];
+        const newCount = profile.last_ai_request_date?.split('T')[0] === today ? profile.ai_requests_count + 1 : 1;
+        const { data: updatedProfile } = await supabase.from('profiles').update({
+          ai_requests_count: newCount,
+          last_ai_request_date: new Date().toISOString()
+        }).eq('id', profile.id).select().single();
+        if (updatedProfile) state.setProfile(updatedProfile);
+      }
 
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -123,11 +146,9 @@ export const useAgentViewModel = () => {
       };
 
       setMessages(prev => [...prev, assistantMsg]);
+      if (data?.action) executeAction(data.action);
 
-      if (data?.action) {
-        executeAction(data.action);
-      }
-    } catch (err: unknown) {
+    } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Connection error';
       // Fallback: handle common commands locally when Edge Function is unavailable
       const reply = handleLocalFallback(text.trim());

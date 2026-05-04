@@ -13,31 +13,33 @@ import type {
   OnEdgesChange,
   OnConnect,
 } from '@xyflow/react';
-
-import type { LogEntry, TraceEntry, Workspace, UserProfile } from './types';
-import { getSourceColor, mixColors } from './utils/colors';
 import type { User } from '@supabase/supabase-js';
+
+import { supabase } from './lib/supabaseClient';
+import type { LogEntry, TraceEntry, Workspace, UserProfile, UserSettings } from './types';
+import { getSourceColor, mixColors } from './utils/colors';
 
 export type AppState = {
   // Auth & Profile
   user: User | null;
   profile: UserProfile | null;
+  settings: UserSettings | null;
 
   // Navigation
   currentView: 'home' | 'editor' | 'docs' | 'settings' | 'profile';
   
-  // Customization
+  // Data (Now loaded from 'workflows' table)
+  workspaces: Workspace[];
+  activeWorkspaceId: string | null;
+  
+  // Customization (Now part of 'user_settings' table)
   accentColor: string;
   gridStyle: 'dots' | 'lines' | 'none';
   edgeType: 'bezier' | 'step' | 'straight';
   snapToGrid: boolean;
   edgePattern: 'solid' | 'dashed';
 
-  // Data
-  workspaces: Workspace[];
-  activeWorkspaceId: string | null;
-  
-  // Runtime (per workspace)
+  // Runtime
   logs: LogEntry[];
   liveTrace: TraceEntry[];
   isSidebarOpen: boolean;
@@ -64,16 +66,20 @@ export type AppState = {
   clearLogs: () => void;
   
   // Workspace Actions
-  createWorkspace: (name: string) => void;
-  deleteWorkspace: (id: string) => void;
-  renameWorkspace: (id: string, name: string) => void;
+  createWorkspace: (name: string) => Promise<void>;
+  deleteWorkspace: (id: string) => Promise<void>;
+  renameWorkspace: (id: string, name: string) => Promise<void>;
   selectWorkspace: (id: string) => void;
   goHome: () => void;
   resetStore: () => void;
   
-  // Auth Actions
+  // Auth & Sync Actions
   setUser: (user: User | null) => void;
   setProfile: (profile: UserProfile | null) => void;
+  setSettings: (settings: UserSettings | null) => void;
+  loadInitialData: () => Promise<void>;
+  syncWorkspace: (wsId: string) => Promise<void>;
+  syncSettings: () => Promise<void>;
 };
 
 const initialNodes: Node[] = [
@@ -89,6 +95,7 @@ const initialNodes: Node[] = [
 export const useStore = create<AppState>()((set, get) => ({
       user: null,
       profile: null,
+      settings: null,
       currentView: 'home',
       workspaces: [],
       activeWorkspaceId: null,
@@ -122,6 +129,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
         set({ workspaces: updatedWorkspaces });
         get().updateEdgeStyles();
+        get().syncWorkspace(activeWorkspaceId);
       },
 
       onEdgesChange: (changes: EdgeChange[]) => {
@@ -137,6 +145,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
         set({ workspaces: updatedWorkspaces });
         get().updateEdgeStyles();
+        get().syncWorkspace(activeWorkspaceId);
       },
 
       onConnect: (connection: Connection) => {
@@ -160,6 +169,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
         set({ workspaces: updatedWorkspaces });
         get().updateEdgeStyles();
+        get().syncWorkspace(activeWorkspaceId);
       },
 
       updateNodeData: (nodeId: string, data: Record<string, unknown>) => {
@@ -178,11 +188,15 @@ export const useStore = create<AppState>()((set, get) => ({
 
         set({ workspaces: updatedWorkspaces });
         get().updateEdgeStyles();
+        get().syncWorkspace(activeWorkspaceId);
       },
 
       toggleSidebar: (open?: boolean) => set({ isSidebarOpen: open !== undefined ? open : !get().isSidebarOpen }),
       toggleLock: () => set({ isLocked: !get().isLocked }),
-      toggleZenMode: () => set({ isZenMode: !get().isZenMode }),
+      toggleZenMode: () => {
+        set({ isZenMode: !get().isZenMode });
+        get().syncSettings();
+      },
       clearLogs: () => {
         const { activeWorkspaceId, workspaces } = get();
         set({ 
@@ -190,6 +204,7 @@ export const useStore = create<AppState>()((set, get) => ({
           logs: [],
           workspaces: workspaces.map(w => w.id === activeWorkspaceId ? { ...w, history: [] } : w)
         });
+        if (activeWorkspaceId) get().syncWorkspace(activeWorkspaceId);
       },
       resetStore: () => {
         set({
@@ -244,22 +259,140 @@ export const useStore = create<AppState>()((set, get) => ({
         });
 
         set({ workspaces: updatedWorkspaces });
+        get().syncWorkspace(activeWorkspaceId);
       },
 
-      // Auth & Profile
-      setUser: (user) => set({ user }),
+      // Auth & Data Fetching
+      setUser: (user) => {
+        set({ user });
+        if (user) get().loadInitialData();
+      },
       setProfile: (profile) => set({ profile }),
+      setSettings: (settings) => {
+        if (settings) {
+          set({ 
+            settings,
+            accentColor: settings.accent_color,
+            gridStyle: settings.grid_style as any,
+            isZenMode: settings.is_zen_mode
+          });
+        }
+      },
+
+      loadInitialData: async () => {
+        const user = get().user;
+        if (!user) return;
+
+        try {
+          // 1. Fetch Profile
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          if (profile) set({ profile });
+
+          // 2. Fetch Settings
+          const { data: settings } = await supabase.from('user_settings').select('*').eq('user_id', user.id).single();
+          if (settings) {
+            get().setSettings(settings);
+          } else {
+            // Create default settings if not exists
+            const defaultSettings = {
+              user_id: user.id,
+              theme_mode: 'dark',
+              accent_color: '#F2572B',
+              grid_style: 'dots',
+              is_zen_mode: false,
+              api_keys: {}
+            };
+            await supabase.from('user_settings').insert(defaultSettings);
+            get().setSettings(defaultSettings as UserSettings);
+          }
+
+          // 3. Fetch Workflows
+          const { data: workflows } = await supabase.from('workflows').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
+          if (workflows) {
+            const mappedWorkspaces: Workspace[] = workflows.map(w => ({
+              id: w.id,
+              user_id: w.user_id,
+              name: w.name,
+              nodes: w.nodes,
+              edges: w.edges,
+              history: w.history || [],
+              createdAt: new Date(w.created_at).toLocaleDateString()
+            }));
+            set({ workspaces: mappedWorkspaces });
+          }
+        } catch (err) {
+          console.error('Error loading initial data:', err);
+        }
+      },
+
+      // Sync Logic
+      syncWorkspace: async (wsId) => {
+        const ws = get().workspaces.find(w => w.id === wsId);
+        if (!ws) return;
+
+        try {
+          await supabase.from('workflows').upsert({
+            id: ws.id,
+            user_id: ws.user_id || get().user?.id,
+            name: ws.name,
+            nodes: ws.nodes,
+            edges: ws.edges,
+            history: ws.history,
+            updated_at: new Date().toISOString()
+          });
+        } catch (err) {
+          console.error('Sync failed for workspace:', wsId, err);
+        }
+      },
+
+      syncSettings: async () => {
+        const user = get().user;
+        if (!user) return;
+
+        try {
+          await supabase.from('user_settings').upsert({
+            user_id: user.id,
+            accent_color: get().accentColor,
+            grid_style: get().gridStyle,
+            is_zen_mode: get().isZenMode,
+            theme_mode: 'dark', // Fixed for now
+            updated_at: new Date().toISOString()
+          });
+        } catch (err) {
+          console.error('Sync failed for settings:', err);
+        }
+      },
 
       // Workspace Management
-      createWorkspace: (name: string) => {
-        const newWs: Workspace = {
-          id: `ws-${Date.now()}`,
+      createWorkspace: async (name: string) => {
+        const user = get().user;
+        if (!user) return;
+
+        const newWsData = {
+          user_id: user.id,
           name: name || 'Untitled Automation',
           nodes: initialNodes,
           edges: [],
-          history: [],
-          createdAt: new Date().toLocaleDateString()
+          history: []
         };
+
+        const { data, error } = await supabase.from('workflows').insert(newWsData).select().single();
+        
+        if (error) {
+          console.error('Error creating workspace:', error);
+          return;
+        }
+
+        const newWs: Workspace = {
+          id: data.id,
+          user_id: data.user_id,
+          name: data.name,
+          nodes: data.nodes,
+          edges: data.edges,
+          history: data.history || [],
+          createdAt: new Date(data.created_at).toLocaleDateString()
+        };
+
         set(state => ({
           workspaces: [newWs, ...state.workspaces],
           activeWorkspaceId: newWs.id,
@@ -269,7 +402,13 @@ export const useStore = create<AppState>()((set, get) => ({
         }));
       },
 
-      deleteWorkspace: (id: string) => {
+      deleteWorkspace: async (id: string) => {
+        const { error } = await supabase.from('workflows').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting workspace:', error);
+          return;
+        }
+
         set(state => ({
           workspaces: state.workspaces.filter(ws => ws.id !== id),
           activeWorkspaceId: state.activeWorkspaceId === id ? null : state.activeWorkspaceId,
@@ -277,7 +416,13 @@ export const useStore = create<AppState>()((set, get) => ({
         }));
       },
 
-      renameWorkspace: (id: string, name: string) => {
+      renameWorkspace: async (id: string, name: string) => {
+        const { error } = await supabase.from('workflows').update({ name }).eq('id', id);
+        if (error) {
+          console.error('Error renaming workspace:', error);
+          return;
+        }
+
         set(state => ({
           workspaces: state.workspaces.map(ws =>
             ws.id === id ? { ...ws, name } : ws
@@ -287,7 +432,6 @@ export const useStore = create<AppState>()((set, get) => ({
 
       selectWorkspace: (id: string) => {
         const ws = get().workspaces.find(w => w.id === id);
-        // Restore latest history as liveTrace if available
         const lastRun = ws?.history[0];
         set({ 
           activeWorkspaceId: id, 
@@ -441,6 +585,7 @@ export const useStore = create<AppState>()((set, get) => ({
             } : w)
           }));
           get().updateEdgeStyles();
+          get().syncWorkspace(activeWorkspaceId);
         }
       },
 }));

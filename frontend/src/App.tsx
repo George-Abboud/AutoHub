@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useStore } from './store';
@@ -68,48 +68,8 @@ function App() {
 
   useKeyboardShortcuts();
 
-  const { user, profile, isLoading: isProfileLoading, updateProfile } = useProfileViewModel();
+  const { user, profile, isLoading: isProfileLoading } = useProfileViewModel();
 
-  const hasLoadedPrefs = useRef(false);
-  useEffect(() => {
-    if (profile?.preferences && !hasLoadedPrefs.current) {
-      useStore.setState(profile.preferences);
-      hasLoadedPrefs.current = true;
-    }
-    if (!profile) hasLoadedPrefs.current = false;
-  }, [profile]);
-
-  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (!profile || !hasLoadedPrefs.current) return;
-    const unsub = useStore.subscribe((state, prevState) => {
-      if (
-        state.accentColor !== prevState.accentColor ||
-        state.gridStyle !== prevState.gridStyle ||
-        state.edgeType !== prevState.edgeType ||
-        state.snapToGrid !== prevState.snapToGrid ||
-        state.edgePattern !== prevState.edgePattern ||
-        state.workspaces !== prevState.workspaces ||
-        state.activeWorkspaceId !== prevState.activeWorkspaceId
-      ) {
-        if (syncTimer.current) clearTimeout(syncTimer.current);
-        syncTimer.current = setTimeout(() => {
-          updateProfile({
-            preferences: {
-              accentColor: state.accentColor,
-              gridStyle: state.gridStyle,
-              edgeType: state.edgeType,
-              snapToGrid: state.snapToGrid,
-              edgePattern: state.edgePattern,
-              workspaces: state.workspaces,
-              activeWorkspaceId: state.activeWorkspaceId
-            }
-          });
-        }, 2000);
-      }
-    });
-    return unsub;
-  }, [profile, updateProfile]);
 
   const handleClearConfirm = useCallback(() => {
     if (!activeWorkspaceId) return;

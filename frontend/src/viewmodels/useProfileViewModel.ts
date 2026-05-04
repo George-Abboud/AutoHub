@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabaseClient';
 import { useStore } from '../store';
 import type { UserProfile } from '../types';
 
+/**
+ * ViewModel for user profile data and updates.
+ */
 export const useProfileViewModel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,13 +26,10 @@ export const useProfileViewModel = () => {
         .single();
         
       if (fetchErr && fetchErr.code !== 'PGRST116') {
-        throw fetchErr; // Ignore "Row not found" error, just means new user
+        throw fetchErr;
       }
-      
-      if (data) {
-        setProfile(data);
-      }
-    } catch (err: any) {
+      if (data) setProfile(data);
+    } catch (err) {
       console.error('Error fetching profile:', err);
     } finally {
       setIsLoading(false);
@@ -50,8 +50,9 @@ export const useProfileViewModel = () => {
         
       if (updateErr) throw updateErr;
       if (data) setProfile(data);
-    } catch (err: any) {
-      setError(err.message || 'Error updating profile');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error updating profile';
+      setError(msg);
       throw err;
     } finally {
       setIsLoading(false);
